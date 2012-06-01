@@ -4,7 +4,7 @@
   <parent>
     <artifactId>messaging-client-parent</artifactId>
     <groupId>com.inmobi.messaging</groupId>
-    <version>1.0.0</version>
+    <version>1.0.1-SNAPSHOT</version>
   </parent>
 
   <artifactId>messaging-client-logappender</artifactId>
@@ -28,7 +28,7 @@
     <dependency>
       <groupId>com.inmobi.messaging</groupId>
       <artifactId>messaging-client-core</artifactId>
-      <version>1.0.0</version>
+      <version>1.0.1-SNAPSHOT</version>
       <type>test-jar</type>
       <scope>test</scope>
     </dependency>
