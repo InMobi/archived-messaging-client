@@ -226,6 +226,16 @@ class CollectorStreamReader extends StreamReader {
     return currentFileName;
   }
 
+  static String getCollectorFileName(String collector,
+      String localStreamfile) {
+    String path= localStreamfile.split(collector)[1];
+    String str = path.substring(StreamReader.getIndexOf(path, '-', 1) + 1,
+        StreamReader.getIndexOf(path, '.', 1));
+    LOG.debug("Collector file name:" + str);
+    return str;
+  }
+
+  
   public static Date getDateFromCollectorFile(String fileName)
       throws Exception {
     return StreamReader.getDate(fileName, 1);

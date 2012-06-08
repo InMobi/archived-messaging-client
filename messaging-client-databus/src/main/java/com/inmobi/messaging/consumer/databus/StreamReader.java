@@ -244,6 +244,27 @@ abstract class StreamReader {
     return false;
   }
 
+  public boolean setCurrentFile(String streamFileName, 
+      long currentLineNum) throws IOException {
+    if (files.containsKey(streamFileName)) {
+      currentFile = files.get(streamFileName);
+      setIterator();
+      this.currentLineNum = currentLineNum;
+      LOG.debug("Set current file:" + currentFile +
+          "currentLineNum:" + currentLineNum);
+      openCurrentFile(false);
+      return true;
+    } else {
+      LOG.info("Did not find current file." + streamFileName +
+          " Trying to set next higher");
+      if (!setNextHigher(streamFileName)) {
+        return false;
+      } else {
+        return true;
+      }
+    }
+  }
+
   Map.Entry<String, Path> getFirstEntry() {
     return files.firstEntry();
   }

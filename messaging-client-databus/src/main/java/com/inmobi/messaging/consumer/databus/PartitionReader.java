@@ -230,7 +230,10 @@ class PartitionReader {
             LOG.info("Switching to collector stream as we reached end of" +
                 " stream on local stream");
             cReader.build();
-            if (cReader.initFromStart()) {
+            if (cReader.setNextHigher(
+                CollectorStreamReader.getCollectorFileName(
+                    partitionId.getCollector(),
+                    currentReader.getCurrentFile().getName()))) {
               currentReader = cReader;
             } else {
               LOG.warn("No stream to read");

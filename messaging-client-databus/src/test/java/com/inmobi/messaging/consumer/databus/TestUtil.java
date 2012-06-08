@@ -74,6 +74,15 @@ public class TestUtil {
       String collectorName, Cluster cluster, Path collectorDir,
       String collectorfileName)
           throws Exception {
+    Path copyPath = copyFileToStreamLocal(fs, streamName, collectorName,
+        cluster, collectorDir, collectorfileName);
+    fs.delete(copyPath, true);
+  }
+
+  static Path copyFileToStreamLocal(FileSystem fs, String streamName,
+      String collectorName, Cluster cluster, Path collectorDir,
+      String collectorfileName)
+          throws Exception {
     String localStreamFileName = LocalStreamReader.getLocalStreamFileName(
         collectorName, collectorfileName);
     Path streamLocalDateDir = TestUtil.getDateDirForCollectorFile(cluster,
@@ -81,7 +90,7 @@ public class TestUtil {
     Path targetFile = new Path(streamLocalDateDir, localStreamFileName);
     Path collectorPath = new Path(collectorDir, collectorfileName);
     FileUtil.gzip(collectorPath, targetFile, cluster.getHadoopConf());
-    fs.delete(collectorPath, true);
+    return collectorPath;
   }
 
   static void assertBuffer(String fileName, int fileNum, int startIndex,

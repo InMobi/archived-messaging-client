@@ -28,7 +28,8 @@ public class TestPartitionReaderMovingFilesFromCollectorStream {
   
   private String[] files = new String[] {TestUtil.files[1],
       TestUtil.files[2], TestUtil.files[3], TestUtil.files[4],
-      TestUtil.files[6], TestUtil.files[8]};
+      TestUtil.files[6], TestUtil.files[8], TestUtil.files[9],
+      TestUtil.files[10], TestUtil.files[11]};
 
 
   @BeforeTest
@@ -36,7 +37,7 @@ public class TestPartitionReaderMovingFilesFromCollectorStream {
     // setup cluster
     cluster = TestUtil.setupLocalCluster(this.getClass().getSimpleName(),
         testStream, partitionId, files,
-        new String[] {TestUtil.files[5], TestUtil.files[7], TestUtil.files[9]},
+        new String[] {TestUtil.files[0], TestUtil.files[5], TestUtil.files[7]},
         1, false);
     collectorDir = new Path(new Path(cluster.getDataDir(), testStream),
         collectorName);
@@ -66,6 +67,7 @@ public class TestPartitionReaderMovingFilesFromCollectorStream {
         CollectorStreamReader.class.getName());
 
     // Move collector files files[1] and files[2]
+    fs.delete(new Path(collectorDir, TestUtil.files[0]), true);
     TestUtil.moveFileToStreamLocal(fs, testStream, collectorName, cluster,
         collectorDir, files[1]);
     TestUtil.moveFileToStreamLocal(fs, testStream, collectorName, cluster,
@@ -90,13 +92,17 @@ public class TestPartitionReaderMovingFilesFromCollectorStream {
     Assert.assertEquals(preader.getCurrentReader().getClass().getName(),
         CollectorStreamReader.class.getName());
 
-    // Move collector files files [3] files[4] and files[5]
+    // Copy collector files files [3] files[4] and files[5]
     TestUtil.moveFileToStreamLocal(fs, testStream, collectorName, cluster,
         collectorDir, files[3]);
     TestUtil.moveFileToStreamLocal(fs, testStream, collectorName, cluster,
         collectorDir, files[4]);
     TestUtil.moveFileToStreamLocal(fs, testStream, collectorName, cluster,
         collectorDir, files[5]);
+    TestUtil.copyFileToStreamLocal(fs, testStream, collectorName, cluster,
+        collectorDir, files[6]);
+    TestUtil.copyFileToStreamLocal(fs, testStream, collectorName, cluster,
+        collectorDir, files[7]);
     fs.delete(new Path(collectorDir, TestUtil.files[5]), true);
     fs.delete(new Path(collectorDir, TestUtil.files[7]), true);
 
@@ -108,6 +114,11 @@ public class TestPartitionReaderMovingFilesFromCollectorStream {
     TestUtil.assertBuffer(files[4], 5, 50, 50, partitionId, buffer);
     TestUtil.assertBuffer(LocalStreamReader.getLocalStreamFileName(
         collectorName, files[5]), 6, 0, 100, partitionId, buffer); 
+    TestUtil.assertBuffer(LocalStreamReader.getLocalStreamFileName(
+        collectorName, files[6]), 7, 0, 100, partitionId, buffer); 
+    TestUtil.assertBuffer(LocalStreamReader.getLocalStreamFileName(
+        collectorName, files[7]), 8, 0, 100, partitionId, buffer); 
+    TestUtil.assertBuffer(files[8], 9, 0, 100, partitionId, buffer);
     Assert.assertTrue(buffer.isEmpty());
     preader.close();
 
