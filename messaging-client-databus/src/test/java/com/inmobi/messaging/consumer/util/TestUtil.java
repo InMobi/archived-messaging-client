@@ -108,7 +108,7 @@ public class TestUtil {
       Path collectorDir, String collectorfileName) throws IOException {
     Path collectorPath = new Path(collectorDir, collectorfileName);
     FileUtil.gzip(collectorPath, targetFile, cluster.getHadoopConf());
-    LOG.debug("Copied " + collectorPath + " to" + targetFile);
+    LOG.info("Copied " + collectorPath + " to" + targetFile);
     return collectorPath;
   }
 
