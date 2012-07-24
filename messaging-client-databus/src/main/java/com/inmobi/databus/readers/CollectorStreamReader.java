@@ -30,6 +30,7 @@ public class CollectorStreamReader extends StreamReader<CollectorFile> {
   protected FSDataInputStream inStream;
   protected BufferedReader reader;
   protected final String streamName;
+  private boolean moveToNext = false;
 
   public CollectorStreamReader(PartitionId partitionId,
       FileSystem fs, String streamName, Path streamDir,
@@ -149,6 +150,7 @@ public class CollectorStreamReader extends StreamReader<CollectorFile> {
   protected void resetCurrentFileSettings() {
     super.resetCurrentFileSettings();
     currentOffset = 0;
+    moveToNext = false;
   }
 
   protected void skipOldData()
@@ -159,6 +161,7 @@ public class CollectorStreamReader extends StreamReader<CollectorFile> {
     } else {
       skipLines(currentLineNum);
       sameStream = true;
+      currentOffset = inStream.getPos();
     }
   }
 
@@ -171,7 +174,7 @@ public class CollectorStreamReader extends StreamReader<CollectorFile> {
       }
       LOG.info("Read " + getCurrentFile() + " with lines:" + currentLineNum);
       build(); // rebuild file list
-      if (!nextFile()) { //there is no next file
+      if (!hasNextFile()) { //there is no next file
         if (noNewFiles) {
           // this boolean check is only for tests 
           return null;
@@ -191,7 +194,15 @@ public class CollectorStreamReader extends StreamReader<CollectorFile> {
           LOG.info("Reading from the same file after reopen");
         }
       } else {
-        LOG.info("Reading from next file: " + getCurrentFile());
+        if (moveToNext) {
+          setNextFile();
+          LOG.info("Reading from next file: " + getCurrentFile());
+        } else {
+          LOG.info("Reading from same file before moving to next");
+          // open the same file
+          waitForFlushAndReOpen();
+          moveToNext = true;
+        }
       }
       line = readNextLine();
     }

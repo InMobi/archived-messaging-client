@@ -215,17 +215,32 @@ public abstract class StreamReader<T extends StreamFile> {
   }
 
   protected boolean nextFile() throws IOException {
+    if (hasNextFile()) {
+      setNextFile();
+      return true;
+    }
+    return false;
+  }
+
+  protected void setNextFile() throws IOException {
+    FileStatus nextFile = fileMap.getNext();
+    if (nextFile != null) {
+      currentFile = nextFile;
+      openCurrentFile(true);
+    }
+  }
+
+  protected boolean hasNextFile() throws IOException {
     LOG.debug("In next file");
     if (!setIterator()) {
       LOG.info("could not set iterator for currentfile");
       return false;
     }
-    FileStatus nextFile = fileMap.getNext();
-    if (nextFile != null) {
-      currentFile = nextFile;
-      openCurrentFile(true);
+    if (fileMap.hasNext()) {
+      LOG.debug("Next file available");
       return true;
     }
+    LOG.debug("No next file available");
     return false;
   }
 

@@ -104,6 +104,7 @@ public class TestCurrentFile {
         currentScribeFile), 4, 30, 20, partitionId, buffer, true);
     writeMessages(out, 50);
     out.close();
+    TestUtil.setUpEmptyFiles(fs, collectorDir, TestUtil.files[5]);
     TestUtil.assertBuffer(CollectorStreamReader.getCollectorFile(
         currentScribeFile), 4, 50, 50, partitionId, buffer, true);
     Assert.assertTrue(buffer.isEmpty());
