@@ -8,7 +8,6 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.testng.Assert;
 import org.testng.annotations.AfterTest;
 import org.testng.annotations.BeforeTest;
@@ -23,6 +22,7 @@ import com.inmobi.messaging.consumer.databus.QueueEntry;
 import com.inmobi.messaging.consumer.databus.StreamType;
 import com.inmobi.messaging.consumer.util.DatabusUtil;
 import com.inmobi.messaging.consumer.util.MessageUtil;
+import com.inmobi.messaging.consumer.util.MiniClusterUtil;
 import com.inmobi.messaging.consumer.util.TestUtil;
 
 public class TestCurrentFile {
@@ -41,9 +41,7 @@ public class TestCurrentFile {
   private PartitionId partitionId = new PartitionId(clusterName, collectorName);
 
   private String currentScribeFile = TestUtil.files[3];
-  MiniDFSCluster dfsCluster;
   Configuration conf = new Configuration();
-  FileSystem lfs;
   private Path streamsLocalDir;
 
 
@@ -61,20 +59,14 @@ public class TestCurrentFile {
   @AfterTest
   public void cleanup() throws IOException {
     TestUtil.cleanupCluster(cluster);
-    if (dfsCluster != null) {
-      dfsCluster.shutdown();
-    }
-    lfs.delete(new Path(MiniDFSCluster.getBaseDir().toString()), true);
+    MiniClusterUtil.shutdownDFSCluster();
   }
 
   @BeforeTest
   public void setup() throws Exception {
-    lfs = FileSystem.getLocal(conf);
-    lfs.delete(new Path(MiniDFSCluster.getBaseDir().toString()), true);
-    dfsCluster = new MiniDFSCluster(conf, 1, true, null);
     cluster = TestUtil.setupDFSCluster(this.getClass().getSimpleName(),
-        testStream,
-        partitionId, dfsCluster.getFileSystem().getUri().toString(),
+        testStream, partitionId,
+        MiniClusterUtil.getDFSCluster(conf).getFileSystem().getUri().toString(),
         null, null, 0);
     collectorDir = DatabusUtil.getCollectorStreamDir(
         new Path(cluster.getRootDir()), testStream,

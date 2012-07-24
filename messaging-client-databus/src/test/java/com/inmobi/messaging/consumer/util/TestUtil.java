@@ -313,8 +313,18 @@ public class TestUtil {
 
   public static Cluster setupDFSCluster(String className, String testStream,
       PartitionId pid, String hdfsUrl, String[] collectorFiles,
-      String[] emptyFiles, int numFilesToMoveToStreamLocal) throws Exception {
+      String[] emptyFiles, Path[] databusFiles, 
+      int numFilesToMoveToStreamLocal, int numFilesToMoveToStreams)
+          throws Exception {
     return setupCluster(className, testStream, pid, hdfsUrl, collectorFiles,
+        emptyFiles, databusFiles, numFilesToMoveToStreamLocal,
+        numFilesToMoveToStreams);
+  }
+  
+  public static Cluster setupDFSCluster(String className, String testStream,
+      PartitionId pid, String hdfsUrl, String[] collectorFiles,
+      String[] emptyFiles, int numFilesToMoveToStreamLocal) throws Exception {
+    return setupDFSCluster(className, testStream, pid, hdfsUrl, collectorFiles,
         emptyFiles, null, numFilesToMoveToStreamLocal, 0);
   }
 
@@ -353,4 +363,4 @@ public class TestUtil {
       Date date) throws IOException{
     return new Path(cluster.getFinalDestDir(streamName, date.getTime()));
   }
-  }
+}

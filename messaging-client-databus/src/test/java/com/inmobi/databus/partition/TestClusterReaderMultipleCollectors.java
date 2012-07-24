@@ -19,6 +19,7 @@ import com.inmobi.messaging.consumer.databus.DataEncodingType;
 import com.inmobi.messaging.consumer.databus.QueueEntry;
 import com.inmobi.messaging.consumer.databus.StreamType;
 import com.inmobi.messaging.consumer.util.DatabusUtil;
+import com.inmobi.messaging.consumer.util.MiniClusterUtil;
 import com.inmobi.messaging.consumer.util.TestUtil;
 
 public class TestClusterReaderMultipleCollectors {
@@ -39,15 +40,17 @@ public class TestClusterReaderMultipleCollectors {
   FileSystem fs;
   Path streamDir;
   Configuration conf = new Configuration();
+
   @BeforeTest
   public void setup() throws Exception {
     // initialize config
-    cluster = TestUtil.setupLocalCluster(this.getClass().getSimpleName(),
-        testStream, new PartitionId(clusterName, collectors[0]), files, null,
+    fs = MiniClusterUtil.getDFSCluster(conf).getFileSystem();
+    cluster = TestUtil.setupDFSCluster(this.getClass().getSimpleName(),
+        testStream, new PartitionId(clusterName, collectors[0]),
+        fs.getUri().toString(), files, null,
         databusFiles1, 0, 1);
     TestUtil.setUpFiles(cluster, collectors[1], files, null, databusFiles2, 0,
         1);
-    fs = FileSystem.get(cluster.getHadoopConf());
     streamDir = DatabusUtil.getStreamDir(StreamType.MERGED,
         new Path(cluster.getRootDir()), testStream);
   }
@@ -55,6 +58,7 @@ public class TestClusterReaderMultipleCollectors {
   @AfterTest
   public void cleanup() throws IOException {
     TestUtil.cleanupCluster(cluster);
+    MiniClusterUtil.shutdownDFSCluster();
   }
 
   @Test
