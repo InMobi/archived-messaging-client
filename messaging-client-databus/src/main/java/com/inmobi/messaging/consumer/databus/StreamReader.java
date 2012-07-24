@@ -244,18 +244,31 @@ abstract class StreamReader {
     return !files.isEmpty();
   }
   boolean nextFile() throws IOException {
+    if (hasNextFile()) {
+      setNextFile();
+      return true;
+    }
+    return false;
+  }
+
+  void setNextFile() throws IOException {
+    String fileName = fileNameIterator.next();
+    LOG.debug("next file name:" + fileName);
+    currentFile = files.get(fileName);
+    openCurrentFile(true);
+  }
+
+  boolean hasNextFile() throws IOException {
     LOG.debug("In next file");
     if (!setIterator()) {
       LOG.info("could not set iterator for currentfile");
       return false;
     }
     if (fileNameIterator.hasNext()) {
-      String fileName = fileNameIterator.next();
-      LOG.debug("next file name:" + fileName);
-      currentFile = files.get(fileName);
-      openCurrentFile(true);
+      LOG.debug("Next file available");
       return true;
     }
+    LOG.debug("No next file available");
     return false;
   }
 

@@ -88,6 +88,7 @@ public class TestCurrentFile {
     TestUtil.assertBuffer(currentScribeFile, 4, 30, 20, partitionId, buffer);
     writeMessages(out, 50);
     out.close();
+    TestUtil.setUpEmptyFiles(fs, collectorDir, TestUtil.files[5]);
     TestUtil.assertBuffer(currentScribeFile, 4, 50, 50, partitionId, buffer);
     Assert.assertTrue(buffer.isEmpty());
     Assert.assertNotNull(preader.getCurrentReader());

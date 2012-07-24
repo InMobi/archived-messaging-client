@@ -27,6 +27,7 @@ class CollectorStreamReader extends StreamReader {
   protected long currentOffset = 0;
   private boolean sameStream = false;
   private long waitTimeForCreate = 100;
+  private boolean moveToNext = false;
 
   CollectorStreamReader(PartitionId partitionId, Cluster cluster,
       String streamName, long waitTimeForFlush) throws IOException {
@@ -92,6 +93,7 @@ class CollectorStreamReader extends StreamReader {
   protected void resetCurrentFileSettings() {
     super.resetCurrentFileSettings();
     currentOffset = 0;
+    moveToNext = false;
   }
 
   protected void skipOldData(FSDataInputStream in, BufferedReader reader)
@@ -102,6 +104,7 @@ class CollectorStreamReader extends StreamReader {
     } else {
       skipLines(in, reader, currentLineNum);
       sameStream = true;
+      currentOffset = in.getPos();
     }
   }
 
@@ -134,7 +137,7 @@ class CollectorStreamReader extends StreamReader {
     }
     while (line == null) { // reached end of file?
       build(); // rebuild file list
-      if (!nextFile()) { //there is no next file
+      if (!hasNextFile()) { //there is no next file
         if (noNewFiles) {
           // this boolean check is only for tests 
           return null;
@@ -154,7 +157,15 @@ class CollectorStreamReader extends StreamReader {
           LOG.info("Reading from the same file after reopen");
         }
       } else {
-        LOG.info("Reading from next file: " + currentFile);
+        if (moveToNext) {
+          setNextFile();
+          LOG.info("Reading from next file: " + currentFile);
+        } else {
+          LOG.info("Reading from same file before moving to next");
+          // open the same file
+          waitForFlushAndReOpen();
+          moveToNext = true;
+        }
       }
       line = readLine(inStream, reader);
     }
