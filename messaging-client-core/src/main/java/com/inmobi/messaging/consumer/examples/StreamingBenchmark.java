@@ -173,7 +173,7 @@ public class StreamingBenchmark {
         }
       }
       // wait for complete
-      while (publisher.getStats().getInFlight() >= 0) {
+      while (publisher.getStats().getInFlight() > 0) {
         try {
           Thread.sleep(100);
         } catch (InterruptedException e) {
