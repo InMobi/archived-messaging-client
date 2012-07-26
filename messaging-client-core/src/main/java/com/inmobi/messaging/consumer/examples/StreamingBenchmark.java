@@ -30,7 +30,7 @@ public class StreamingBenchmark {
   static void printUsage() {
     System.out.println(
         "Usage: StreamingBenchmark  " +
-        " [-producer <topic-name> <no-of-msgs> <sleepMillis-every-msg> ]" +
+        " [-producer <topic-name> <no-of-msgs> <no-of-msgs-per-sec> ]" +
         " [-consumer <no-of-producers> <no-of-msgs> [<hadoopconsumerflag>] [<timezone>]]");
     System.exit(-1);    
   }
@@ -40,7 +40,7 @@ public class StreamingBenchmark {
       printUsage();
     }
     long maxSent = -1;
-    int sleepMillis = -1;
+    int numMsgsPerSec = -1;
     String timezone = null;
     String topic = null;
     int numProducers = 1;
@@ -53,7 +53,7 @@ public class StreamingBenchmark {
       if (args[0].equals("-producer")) {
         topic = args[1];
         maxSent = Long.parseLong(args[2]);
-        sleepMillis = Integer.parseInt(args[3]);
+        numMsgsPerSec = Integer.parseInt(args[3]);
         runProducer = true;
         consumerOptionIndex = 4;
       } else {
@@ -84,7 +84,7 @@ public class StreamingBenchmark {
 
     if (runProducer) {
      System.out.println("Using topic: " + topic);
-      producer = createProducer(topic, maxSent, sleepMillis);
+      producer = createProducer(topic, maxSent, numMsgsPerSec);
       producer.start();
     }
     
@@ -133,9 +133,9 @@ public class StreamingBenchmark {
     System.exit(0);
   }
 
-  static Producer createProducer(String topic, long maxSent, int sleepMillis)
+  static Producer createProducer(String topic, long maxSent, int numMsgsPerSec)
       throws IOException {
-    return new Producer(topic, maxSent, sleepMillis); 
+    return new Producer(topic, maxSent, numMsgsPerSec); 
   }
 
   static Consumer createConsumer(ClientConfig config, long maxSent,
@@ -145,26 +145,51 @@ public class StreamingBenchmark {
 
   static class Producer extends Thread {
     volatile AbstractMessagePublisher publisher;
-    String topic;
-    long maxSent;
-    int sleepMillis;
+    final String topic;
+    final long maxSent;
+    final long sleepMillis;
+    final long numMsgsPerSleepInterval;
 
-    Producer(String topic, long maxSent, int sleepMillis) throws IOException {
+    Producer(String topic, long maxSent, int numMsgsPerSec) throws IOException {
       this.topic = topic;
       this.maxSent = maxSent;
-      this.sleepMillis = sleepMillis;
+      if (maxSent <= 0) {
+        throw new IllegalArgumentException("Invalid total number of messages");
+      }
+      if (numMsgsPerSec > 1000) {
+        this.sleepMillis = 1;
+        numMsgsPerSleepInterval= numMsgsPerSec/1000;        
+      } else {
+        if (numMsgsPerSec <= 0) {
+          throw new IllegalArgumentException("Invalid number of messages per" +
+          		" second");
+        }
+        this.sleepMillis = 1000/numMsgsPerSec;
+        numMsgsPerSleepInterval = 1;
+      }
       publisher = (AbstractMessagePublisher) MessagePublisherFactory.create();
     }
 
     @Override
     public void run() {
       System.out.println("Producer started!");
-      for (long i = 1; i <= maxSent; i++) {
-        long time = System.currentTimeMillis();
-        String s = i + DELIMITER + Long.toString(time);
-        Message msg = new Message(ByteBuffer.wrap(s.getBytes()));
-        publisher.publish(topic, msg);
-
+      long i = 1;
+      boolean sentAll= false;
+      while (true) {
+        for (long j = 0; j < numMsgsPerSleepInterval; j++) {
+          long time = System.currentTimeMillis();
+          String s = i + DELIMITER + Long.toString(time);
+          Message msg = new Message(ByteBuffer.wrap(s.getBytes()));
+          publisher.publish(topic, msg);
+          if (i == maxSent) {
+            sentAll = true;
+            break;
+          }
+          i++;
+        }
+        if (sentAll) {
+          break;
+        }
         try {
           Thread.sleep(sleepMillis);
         } catch (InterruptedException e) {
