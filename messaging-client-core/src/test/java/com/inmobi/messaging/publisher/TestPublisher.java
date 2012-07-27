@@ -21,7 +21,7 @@ public class TestPublisher {
         (AbstractMessagePublisher) MessagePublisherFactory.create(conf);
     doTest(publisher);
     Assert.assertFalse(publisher.statEmissionEnabled());
-    Assert.assertFalse(MockStatsEmitter.inited);
+    Assert.assertNull((publisher.getStatsEmitter()));
   }
 
   @Test
@@ -30,7 +30,7 @@ public class TestPublisher {
         (AbstractMessagePublisher) MessagePublisherFactory.create();
     doTest(publisher);
     Assert.assertTrue(publisher.statEmissionEnabled());
-    Assert.assertTrue(MockStatsEmitter.inited);
+    Assert.assertTrue(((MockStatsEmitter)publisher.getStatsEmitter()).inited);
   }
 
   @Test
@@ -42,7 +42,7 @@ public class TestPublisher {
             url.getFile());
     doTest(publisher);
     Assert.assertTrue(publisher.statEmissionEnabled());
-    Assert.assertTrue(MockStatsEmitter.inited);
+    Assert.assertTrue(((MockStatsEmitter)publisher.getStatsEmitter()).inited);
   }
 
   @Test
@@ -53,7 +53,7 @@ public class TestPublisher {
           conf, MockPublisher.class.getName());
     doTest(publisher);
     Assert.assertFalse(publisher.statEmissionEnabled());
-    Assert.assertFalse(MockStatsEmitter.inited);
+    Assert.assertNull((publisher.getStatsEmitter()));
   }
 
 

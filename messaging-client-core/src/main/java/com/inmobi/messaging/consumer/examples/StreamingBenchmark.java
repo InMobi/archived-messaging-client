@@ -27,17 +27,27 @@ public class StreamingBenchmark {
   static final SimpleDateFormat LogDateFormat = new SimpleDateFormat(
       "yyyy:MM:dd hh:mm:ss");
 
-  static void printUsage() {
+  static final int WRONG_USAGE_CODE = -1;
+  static final int FAILED_CODE = 1;
+
+  static int printUsage() {
     System.out.println(
         "Usage: StreamingBenchmark  " +
-        " [-producer <topic-name> <no-of-msgs> <no-of-msgs-per-sec> ]" +
-        " [-consumer <no-of-producers> <no-of-msgs> [<hadoopconsumerflag>] [<timezone>]]");
-    System.exit(-1);    
+        " [-producer <topic-name> <no-of-msgs> <no-of-msgs-per-sec>" +
+          " [<timeoutSeconds>]]" +
+        " [-consumer <no-of-producers> <no-of-msgs>" +
+          " [<timeoutSeconds> <hadoopconsumerflag>] [<timezone>]]");
+    return WRONG_USAGE_CODE;
   }
 
   public static void main(String[] args) throws Exception {
+    int exitcode = run(args);
+    System.exit(exitcode);
+  }
+
+  public static int run(String[] args) throws Exception {
     if (args.length < 2) {
-      printUsage();
+      return printUsage();
     }
     long maxSent = -1;
     int numMsgsPerSec = -1;
@@ -47,15 +57,26 @@ public class StreamingBenchmark {
     boolean runProducer = false;
     boolean runConsumer = false;
     boolean hadoopConsumer = false;
+    int producerTimeout = 0;
+    int consumerTimeout = 0;
 
     if (args.length >= 3) {
       int consumerOptionIndex = -1;
       if (args[0].equals("-producer")) {
+        if (args.length == 3) {
+          return printUsage();
+        }
         topic = args[1];
         maxSent = Long.parseLong(args[2]);
         numMsgsPerSec = Integer.parseInt(args[3]);
         runProducer = true;
-        consumerOptionIndex = 4;
+        if (args.length > 4) {
+          producerTimeout = Integer.parseInt(args[4]);
+          System.out.println("producerTimeout :" + producerTimeout + " seconds");
+          consumerOptionIndex = 5;
+        } else {
+          consumerOptionIndex = 4;
+        }
       } else {
         consumerOptionIndex = 0;
       }
@@ -65,16 +86,20 @@ public class StreamingBenchmark {
           numProducers = Integer.parseInt(args[consumerOptionIndex + 1]);
           maxSent = Long.parseLong(args[consumerOptionIndex + 2]);
           if (args.length > consumerOptionIndex + 3) {
-            hadoopConsumer = (Integer.parseInt(args[consumerOptionIndex + 3]) > 0);
+            consumerTimeout = Integer.parseInt(args[consumerOptionIndex + 3]);
+            System.out.println("consumerTimeout :" + consumerTimeout + " seconds");
           }
           if (args.length > consumerOptionIndex + 4) {
-            timezone = args[consumerOptionIndex + 4];
+            hadoopConsumer = (Integer.parseInt(args[consumerOptionIndex + 4]) > 0);
+          }
+          if (args.length > consumerOptionIndex + 5) {
+            timezone = args[consumerOptionIndex + 5];
           }
           runConsumer = true;
         }
       }
     } else {
-      printUsage();
+      return printUsage();
     }
 
     assert(runProducer || runConsumer == true);
@@ -83,7 +108,7 @@ public class StreamingBenchmark {
     StatusLogger statusPrinter;
 
     if (runProducer) {
-     System.out.println("Using topic: " + topic);
+      System.out.println("Using topic: " + topic);
       producer = createProducer(topic, maxSent, numMsgsPerSec);
       producer.start();
     }
@@ -108,17 +133,25 @@ public class StreamingBenchmark {
     statusPrinter = new StatusLogger(producer, consumer);
     statusPrinter.start();
 
-    
+    int exitcode = 0;
     if (runProducer) {
       assert (producer != null);
-      producer.join();
+      producer.join(producerTimeout * 1000);
+      System.out.println("Producer thread state:" + producer.getState());
+      exitcode = producer.exitcode;
+      if (exitcode == FAILED_CODE) {
+        System.out.println("Producer FAILED!");
+      } else {
+        System.out.println("Producer SUCCESS!");
+      }
       if (!runConsumer) {
         statusPrinter.stopped = true;
       }
     } 
     if (runConsumer) {
-      assert (consumer !=null);
-      consumer.join();
+      assert (consumer != null);
+      consumer.join(consumerTimeout * 1000);
+      System.out.println("Consumer thread state: "+ consumer.getState());
       statusPrinter.stopped = true;
     }
 
@@ -126,11 +159,12 @@ public class StreamingBenchmark {
     if (runConsumer) {
       if (!consumer.success) {
         System.out.println("Data validation FAILED!");
+        exitcode = FAILED_CODE;
       } else {
         System.out.println("Data validation SUCCESS!");
       }
     }
-    System.exit(0);
+    return exitcode;
   }
 
   static Producer createProducer(String topic, long maxSent, int numMsgsPerSec)
@@ -149,6 +183,7 @@ public class StreamingBenchmark {
     final long maxSent;
     final long sleepMillis;
     final long numMsgsPerSleepInterval;
+    int exitcode = FAILED_CODE;
 
     Producer(String topic, long maxSent, int numMsgsPerSec) throws IOException {
       this.topic = topic;
@@ -216,6 +251,9 @@ public class StreamingBenchmark {
 
       publisher.close();
       System.out.println("Producer closed");
+      if (publisher.getStats().getSuccessCount() == maxSent) {
+        exitcode = 0;
+      }
     }
 
   }
@@ -274,13 +312,9 @@ public class StreamingBenchmark {
           if (received == maxSent * numProducers) {
             break;
           }
-        } catch (InterruptedException e) {
+        } catch (Exception e) {
           e.printStackTrace();
           return;
-        } catch (Exception e) {
-          System.out.println("Got exception for " + 
-            new String(msg.getData().array()));
-          e.printStackTrace();
         }
       }
       if (messageToProducerCount.size() == maxSent) {

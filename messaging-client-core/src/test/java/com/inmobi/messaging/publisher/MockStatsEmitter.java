@@ -5,9 +5,9 @@ import java.util.Properties;
 import com.inmobi.stats.StatsEmitterBase;
 
 public class MockStatsEmitter extends StatsEmitterBase {
-  public static boolean inited;
+  public boolean inited;
 
-  static void reset() {
+  void reset() {
     inited = false;
   }
   @Override

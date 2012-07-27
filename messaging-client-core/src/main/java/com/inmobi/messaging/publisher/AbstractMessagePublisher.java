@@ -50,6 +50,10 @@ public abstract class AbstractMessagePublisher implements MessagePublisher {
     return statEnabled;
   }
 
+  StatsEmitter getStatsEmitter() {
+    return emitter;
+  }
+
   protected void init(ClientConfig config) throws IOException {
     try {
       String emitterConfig = config

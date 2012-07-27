@@ -9,6 +9,7 @@ public class MockConsumer extends AbstractMessageConsumer {
 
   public static String mockMsg = "mock msg";
   boolean initedConf = false;
+  public static boolean block = false;
   
   protected void init(ClientConfig config) throws IOException {
     super.init(config);
@@ -16,7 +17,10 @@ public class MockConsumer extends AbstractMessageConsumer {
   }
   @Override
   public Message next() throws InterruptedException {
-      return new Message(mockMsg.getBytes());
+    if (block) {
+      Thread.sleep(2000);
+    }
+    return new Message(mockMsg.getBytes());
   }
 
   @Override
