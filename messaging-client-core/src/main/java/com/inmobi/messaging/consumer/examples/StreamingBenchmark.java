@@ -70,7 +70,7 @@ public class StreamingBenchmark {
         maxSent = Long.parseLong(args[2]);
         numMsgsPerSec = Integer.parseInt(args[3]);
         runProducer = true;
-        if (args.length > 4) {
+        if (args.length > 4 && !args[4].equals("-consumer")) {
           producerTimeout = Integer.parseInt(args[4]);
           System.out.println("producerTimeout :" + producerTimeout + " seconds");
           consumerOptionIndex = 5;
