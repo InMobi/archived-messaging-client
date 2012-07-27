@@ -47,6 +47,7 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-assembly-plugin</artifactId>
         <configuration>
+          <ignoreDirFormatExtensions>true</ignoreDirFormatExtensions>
           <descriptors>
             <descriptor>src/main/assembly/dist.xml</descriptor>
           </descriptors>
@@ -62,6 +63,43 @@
         </executions>
       </plugin>
 
+      <!--Plugin to build deb-->
+      <plugin>
+        <artifactId>jdeb</artifactId>
+        <groupId>org.vafer</groupId>
+        <version>0.9</version>
+        <executions>
+          <execution>
+            <phase>package</phase>
+            <goals>
+              <goal>jdeb</goal>
+            </goals>
+            <configuration>
+              <installDir>/usr/local/messaging-client-${project.version}</installDir>
+              <deb>${project.build.directory}/${artifactId}_${version}.deb</deb>
+              <dataSet>
+                <data>
+                  <src>target/com.inmobi.messaging-messaging-client-dist-${project.version}-dist</src>
+                  <type>directory</type>
+                  <mapper>
+                    <type>perm</type>
+                    <prefix>/usr/local/messaging-client-${project.version}</prefix>
+                  </mapper>
+                </data>
+                <data>
+                  <src>target/com.inmobi.messaging-messaging-client-dist-${project.version}-dist/bin</src>
+                  <type>directory</type>
+                  <mapper>
+                    <type>perm</type>
+                    <prefix>/usr/local/messaging-client-${project.version}/bin</prefix>
+                    <filemode>755</filemode>
+                  </mapper>
+                </data>
+              </dataSet>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
     </plugins>
   </build>
 

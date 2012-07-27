@@ -1,9 +1,9 @@
-Package: [messaging-client]
-Version: [2.0.0-SNAPSHOT]
+Package: messaging-client
+Version: 1.2.1
 Section:  misc
 Priority: high
 Architecture: all
-Depends: jdk (>= 1.5)
+Depends: sun-java6-jre | java2-runtime
 Maintainer: Inmobi (databus-dev@inmobi.com)
 Description: messaging-client
 Distribution: aplha
