@@ -55,25 +55,20 @@
 
   <fileSets>
     <fileSet>
-      <directory>../</directory>
-
-      <excludes>
-        <exclude>messaging-client-core/**</exclude>
-        <exclude>messaging-client-logappender/**</exclude>
-        <exclude>messaging-client-scribe/**</exclude>
-        <exclude>messaging-client-flume/**</exclude>
-        <exclude>messaging-client-databus/**</exclude>
-        <exclude>messaging-client-dist/**</exclude>
-        <exclude>target/**</exclude>
-        <exclude>lib/**</exclude>
-      </excludes>
-
+      <directory>../bin</directory>
+      <outputDirectory>bin</outputDirectory>
       <includes>
-        <include>bin/**</include>
-        <include>conf/**</include>
-        <include>pom.xml</include>
+        <include>**</include>
+      </includes>
+    </fileSet>
+    <fileSet>
+      <directory>../conf</directory>
+      <outputDirectory>conf</outputDirectory>
+      <includes>
+        <include>**</include>
       </includes>
     </fileSet>
   </fileSets>
+
 
 </assembly>
