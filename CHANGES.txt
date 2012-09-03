@@ -1,0 +1,87 @@
+Release 1.3.0 - 2012-09-03
+Incompatible changes:
+    1. Publisher to emit stats for each topic.  
+       Incompatibility : AbstractMessagePublisher.getStats() method signature
+        got changed to AbstractMessagePublisher.getStats(String topicName)
+
+Bug Fixes and Improvements:
+
+    28. Add example for multi topic publisher
+
+    27. Stop timer in scribeTopicPublisher is connection fails
+
+    26. Fix duplicate counting in streaming benchmark
+
+    25. Undeprecate set topic for logappender
+
+    24. Fix typo in the log
+
+    23. Skip InterruptedException from handledException count
+
+    22. Add thread join for partition reader close
+
+    21. Add the reading log when stream is closed
+
+    20. Add TextStatsEmitter
+
+    19. Remove close from MessagingClientStatsBuilder which is removing all statsexposers
+
+    18. Add counter for cumulative nanoseconds for fecthing message form source
+
+    17. Remove partitionreader's statsexposer in close
+
+    16. Fix flaky test failure in collector metrics
+
+    15. Populate partitionreader metrics and update tests
+
+    14. Add PartitionReaderStatsExposers to the statsBuilder
+
+    13. Change metric class names wrt inmobi stats interface
+
+    12. Add message consumer metrics
+
+    11. Change PartitionId.toString() not to include null collector name
+
+    10. Add break to buildListing when next minute directory does not exist
+
+    9. Enable TestClusterReaderMultipleCollectors
+
+    8. Add missing test in TestPartitionReaderWaitingHadoopStream
+
+    7. Change surefire properties - version, timeout
+
+    6. Fix ClusterReader not to stream last minute directory until next minute directory is available
+
+    5. Fix purging the messages from TreeMap and numDuplicates
+
+    4. Fix typo for rootdir configuration in conf
+
+    3. Create a new buffer after reset()
+
+    2. Reduce memory footprint of consumer
+
+    1. Add fileset for bin and conf explicitly for jenkins build to work after deb packaging
+
+Release 1.2.1 - 2012-07-30
+
+    11. timeoutSeconds for producer should be optional even in case of conusmer argument being passed
+
+    10. Make install directory for jdeb as /usr/local/messaging-client
+
+    9. Add exit codes and timeouts to producer and consumer of streaming benchmark
+
+    8. Make messaging-client installable through deb package
+
+    7. StreamingBenchmark producer to take number of messages per second instead of sleeptime
+
+    6. Add hadoopconsumerflag usage for m-client
+
+    5. Producer should wait for positive inflight messages, not zero.
+
+    4. Fix data skipping in Collector stream while reading currently written data
+
+    3. Fix TestClusterReaderMultipleCollectors to use HDFS instead of Local FileSystem to fix flaky failure
+
+    2. Fix flaky test failure in TestClusterReaderMultipleCollectors
+
+    1. Add timeout to tests with logging at INFO level
