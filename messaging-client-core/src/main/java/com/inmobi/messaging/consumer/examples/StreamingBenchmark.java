@@ -36,9 +36,9 @@ public class StreamingBenchmark {
     System.out.println(
         "Usage: StreamingBenchmark  " +
         " [-producer <topic-name> <no-of-msgs> <no-of-msgs-per-sec>" +
-          " [<timeoutSeconds>]]" +
+          " [<timeoutSeconds> <msg-size>]]" +
         " [-consumer <no-of-producers> <no-of-msgs>" +
-          " [<timeoutSeconds> <hadoopconsumerflag>] [<timezone>]]");
+          " [<timeoutSeconds> <msg-size> <hadoopconsumerflag> <timezone>]]");
     return WRONG_USAGE_CODE;
   }
 
@@ -47,8 +47,13 @@ public class StreamingBenchmark {
     System.exit(exitcode);
   }
 
+  static int numProducerArgs = 5;
+  static int numProducerRequiredArgs = 3;
+  static int numConsumerArgs = 5;
+  static int numConsumerRequiredArgs = 2;
+  static int minArgs = 3;
   public static int run(String[] args) throws Exception {
-    if (args.length < 2) {
+    if (args.length < minArgs) {
       return printUsage();
     }
     long maxSent = -1;
@@ -61,11 +66,12 @@ public class StreamingBenchmark {
     boolean hadoopConsumer = false;
     int producerTimeout = 0;
     int consumerTimeout = 0;
+    int msgSize = 2000;
 
-    if (args.length >= 3) {
+    if (args.length >= minArgs) {
       int consumerOptionIndex = -1;
       if (args[0].equals("-producer")) {
-        if (args.length == 3) {
+        if (args.length < (numProducerRequiredArgs + 1)) {
           return printUsage();
         }
         topic = args[1];
@@ -75,7 +81,12 @@ public class StreamingBenchmark {
         if (args.length > 4 && !args[4].equals("-consumer")) {
           producerTimeout = Integer.parseInt(args[4]);
           System.out.println("producerTimeout :" + producerTimeout + " seconds");
-          consumerOptionIndex = 5;
+          if (args.length > 5 && !args[5].equals("-consumer")) {
+            msgSize = Integer.parseInt(args[5]);
+            consumerOptionIndex = 6;
+          } else {
+            consumerOptionIndex = 5;
+          }
         } else {
           consumerOptionIndex = 4;
         }
@@ -92,10 +103,14 @@ public class StreamingBenchmark {
             System.out.println("consumerTimeout :" + consumerTimeout + " seconds");
           }
           if (args.length > consumerOptionIndex + 4) {
-            hadoopConsumer = (Integer.parseInt(args[consumerOptionIndex + 4]) > 0);
+            msgSize = Integer.parseInt(args[consumerOptionIndex + 4]);
           }
           if (args.length > consumerOptionIndex + 5) {
-            timezone = args[consumerOptionIndex + 5];
+            hadoopConsumer = (Integer.parseInt(args[consumerOptionIndex + 5])
+                > 0);
+          }
+          if (args.length > consumerOptionIndex + 6) {
+            timezone = args[consumerOptionIndex + 6];
           }
           runConsumer = true;
         }
@@ -111,7 +126,7 @@ public class StreamingBenchmark {
 
     if (runProducer) {
       System.out.println("Using topic: " + topic);
-      producer = createProducer(topic, maxSent, numMsgsPerSec);
+      producer = createProducer(topic, maxSent, numMsgsPerSec, msgSize);
       producer.start();
     }
     
@@ -128,7 +143,8 @@ public class StreamingBenchmark {
 
       // create and start consumer
       assert(config != null);
-      consumer = createConsumer(config, maxSent, now, numProducers, hadoopConsumer);
+      consumer = createConsumer(config, maxSent, now, numProducers,
+          hadoopConsumer, msgSize);
       consumer.start();
     }
     
@@ -169,14 +185,16 @@ public class StreamingBenchmark {
     return exitcode;
   }
 
-  static Producer createProducer(String topic, long maxSent, int numMsgsPerSec)
-      throws IOException {
-    return new Producer(topic, maxSent, numMsgsPerSec); 
+  static Producer createProducer(String topic, long maxSent, int numMsgsPerSec,
+      int msgSize) throws IOException {
+    return new Producer(topic, maxSent, numMsgsPerSec, msgSize); 
   }
 
   static Consumer createConsumer(ClientConfig config, long maxSent,
-      Date startTime, int numProducers, boolean hadoopConsumer) throws IOException {
-    return new Consumer(config, maxSent, startTime, numProducers, hadoopConsumer);    
+      Date startTime, int numProducers, boolean hadoopConsumer, int maxSize)
+          throws IOException {
+    return new Consumer(config, maxSent, startTime, numProducers,
+        hadoopConsumer, maxSize);    
   }
 
   static class Producer extends Thread {
@@ -186,8 +204,10 @@ public class StreamingBenchmark {
     final long sleepMillis;
     final long numMsgsPerSleepInterval;
     int exitcode = FAILED_CODE;
+    byte[] fixedMsg;
 
-    Producer(String topic, long maxSent, int numMsgsPerSec) throws IOException {
+    Producer(String topic, long maxSent, int numMsgsPerSec, int msgSize)
+        throws IOException {
       this.topic = topic;
       this.maxSent = maxSent;
       if (maxSent <= 0) {
@@ -204,25 +224,23 @@ public class StreamingBenchmark {
         this.sleepMillis = 1000/numMsgsPerSec;
         numMsgsPerSleepInterval = 1;
       }
+      fixedMsg = getMessageBytes(msgSize);
       publisher = (AbstractMessagePublisher) MessagePublisherFactory.create();
     }
 
     @Override
     public void run() {
       System.out.println("Producer started!");
-      long i = 1;
+      long msgIndex = 1;
       boolean sentAll= false;
       while (true) {
         for (long j = 0; j < numMsgsPerSleepInterval; j++) {
-          long time = System.currentTimeMillis();
-          String s = i + DELIMITER + Long.toString(time);
-          Message msg = new Message(ByteBuffer.wrap(s.getBytes()));
-          publisher.publish(topic, msg);
-          if (i == maxSent) {
+          publisher.publish(topic, constructMessage(msgIndex, fixedMsg));
+          if (msgIndex == maxSent) {
             sentAll = true;
             break;
           }
-          i++;
+          msgIndex++;
         }
         if (sentAll) {
           break;
@@ -257,7 +275,36 @@ public class StreamingBenchmark {
         exitcode = 0;
       }
     }
+  }
 
+  static byte[] getMessageBytes(int msgSize) {
+    byte[] msg = new byte[msgSize];
+    for (int i = 0; i < msgSize; i++) {
+      msg[i] = 'A';
+    }
+    return msg;
+  }
+
+  static Message constructMessage(long msgIndex, byte[] randomBytes) {
+    long time = System.currentTimeMillis();
+    String s = msgIndex + DELIMITER + Long.toString(time) + DELIMITER;
+    byte[] msgBytes = new byte[s.length() + randomBytes.length];
+    System.arraycopy(s.getBytes(), 0, msgBytes, 0, s.length());
+    System.arraycopy(randomBytes, 0, msgBytes, s.length(), randomBytes.length);
+    return new Message(ByteBuffer.wrap(msgBytes));
+  }
+
+  static String getMessage(Message msg, boolean hadoopConsumer)
+      throws IOException {
+    byte[] byteArray = msg.getData().array();
+    if (!hadoopConsumer) {
+      return new String(byteArray);
+    } else {
+      Text text = new Text();
+      ByteArrayInputStream bais = new ByteArrayInputStream(byteArray);
+      text.readFields(new DataInputStream(bais));
+      return new String(Base64.decodeBase64(text.getBytes()));
+    }
   }
 
   static class Consumer extends Thread {
@@ -271,26 +318,18 @@ public class StreamingBenchmark {
     boolean hadoopConsumer = false;
     int numDuplicates = 0;
     long nextElementToPurge = 1;
+    String fixedMsg;
+    int mismatches = 0;
 
     Consumer(ClientConfig config, long maxSent, Date startTime,
-        int numProducers, boolean hadoopConsumer) throws IOException {
+        int numProducers, boolean hadoopConsumer, int msgSize)
+            throws IOException {
       this.maxSent = maxSent;
       messageToProducerCount = new TreeMap<Long, Integer>();
       this.numProducers = numProducers;
       consumer = MessageConsumerFactory.create(config, startTime);
       this.hadoopConsumer = hadoopConsumer;
-    }
-
-    private String getMessage(Message msg) throws IOException {
-      byte[] byteArray = msg.getData().array();
-      if (!hadoopConsumer) {
-        return new String(byteArray);
-      } else {
-        Text text = new Text();
-        ByteArrayInputStream bais = new ByteArrayInputStream(byteArray);
-        text.readFields(new DataInputStream(bais));
-        return new String(Base64.decodeBase64(text.getBytes()));
-      }
+      this.fixedMsg = new String(getMessageBytes(msgSize));
     }
 
     private void purgeCounts() {
@@ -324,7 +363,7 @@ public class StreamingBenchmark {
         try {
           msg = consumer.next();
           received++;
-          String s = getMessage(msg);
+          String s = getMessage(msg, hadoopConsumer);
           String[] ar = s.split(DELIMITER);
           Long seq = Long.parseLong(ar[0]);
           Integer pcount = messageToProducerCount.get(seq);
@@ -339,6 +378,10 @@ public class StreamingBenchmark {
             }
             long sentTime = Long.parseLong(ar[1]);
             totalLatency += System.currentTimeMillis() - sentTime;
+            
+            if (!fixedMsg.equals(ar[2])) {
+              mismatches++;
+            }
           }
           purgeCounts();
           if (received == maxSent * numProducers) {
@@ -379,6 +422,10 @@ public class StreamingBenchmark {
             }
           }
         }
+      }
+      if (mismatches != 0) {
+        System.out.println("No zero mismatches!");
+        success = false;
       }
       consumer.close();
       System.out.println("Consumer closed");
@@ -422,6 +469,8 @@ public class StreamingBenchmark {
           .getInFlight());
       sb.append(" SentSuccess:" + producer.publisher.getStats(producer.topic).
           getSuccessCount());
+      sb.append(" GracefulTerminates:" + producer.publisher.getStats(
+          producer.topic).getGracefulTerminates());
       sb.append(" UnhandledExceptions:" + producer.publisher.getStats(
           producer.topic).getUnhandledExceptionCount());
     }

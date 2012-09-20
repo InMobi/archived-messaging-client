@@ -43,23 +43,23 @@ public class TestLogger {
     Assert.assertEquals(appender.getTopic(), topic);
     Message msg = new Message(ByteBuffer.wrap("hello".getBytes()));
     logger.info(msg);
-    Assert.assertEquals(MockPublisher.msg, msg);
-    MockPublisher.reset();
+    Assert.assertEquals(MockPublisher.getMsg(topic), msg);
+    MockPublisher.reset(topic);
 
     // test byte[] logging
     logger.info(msg.getData().array());
-    Assert.assertEquals(MockPublisher.msg, msg);
-    MockPublisher.reset();
+    Assert.assertEquals(MockPublisher.getMsg(topic), msg);
+    MockPublisher.reset(topic);
 
     // test String logging
     logger.info(new String(msg.getData().array()));
-    Assert.assertEquals(MockPublisher.msg, msg);
-    MockPublisher.reset();
+    Assert.assertEquals(MockPublisher.getMsg(topic), msg);
+    MockPublisher.reset(topic);
 
     // test Object logging. any other kind must be ignored
     logger.info(new Object());
-    Assert.assertNull(MockPublisher.msg);
-    MockPublisher.reset();
+    Assert.assertNull(MockPublisher.getMsg(topic));
+    MockPublisher.reset(topic);
 
     // test thrift object logging
     LogEntry le = new LogEntry();
@@ -67,8 +67,8 @@ public class TestLogger {
     le.message = "massage";
     logger.info(le);
     TSerializer serializer = new TSerializer();
-    Assert.assertEquals(MockPublisher.msg, 
+    Assert.assertEquals(MockPublisher.getMsg(topic), 
         new Message(serializer.serialize(le)));
-    MockPublisher.reset();
+    MockPublisher.reset(topic);
   }
 }

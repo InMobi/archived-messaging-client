@@ -65,8 +65,8 @@ Usage: $0 file <topic> <file> --conf <confdir>
        $0 seqgen <topic> <maxSeq> --conf <confdir>
        $0 consoleconsumer --conf <confdir> 
        $0 benchmark 
-          [-producer <topic-name> <no-of-msgs> <no-of-msgs-per-sec> [<timeoutSeconds>]]
-          [-consumer <no-of-producers> <no-of-messages> [<timeoutSeconds> <hadoopconsumerflag> <timezone>]] --conf <confdir>
+          [-producer <topic-name> <no-of-msgs> <no-of-msgs-per-sec> [<timeoutSeconds> <msg-size>]]
+          [-consumer <no-of-producers> <no-of-messages> [<timeoutSeconds> <msg-size> <hadoopconsumerflag> <timezone>]] --conf <confdir>
        $0 counter <minutes-to-read-from> --conf <confdir> 
        $0 multitopicseqgen <topic1> <topic2> <maxSeq> --conf <confdir>
 

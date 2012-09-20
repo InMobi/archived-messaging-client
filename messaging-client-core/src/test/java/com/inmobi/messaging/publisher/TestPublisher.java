@@ -115,8 +115,8 @@ public class TestPublisher {
         1, "success count");
     Assert.assertEquals(publisher.getStats(topic).getUnhandledExceptionCount(),
         0, "unhandledexception count");
-    Assert.assertEquals(MockPublisher.msg, msg);
-    MockPublisher.reset();
+    Assert.assertEquals(MockPublisher.getMsg(topic), msg);
+    MockPublisher.reset(topic);
     Assert.assertEquals(publisher.getStatsExposer(topic).getContexts().get(
         TopicStatsExposer.STATS_TYPE_CONTEXT_NAME),
         TopicStatsExposer.STATS_TYPE);
