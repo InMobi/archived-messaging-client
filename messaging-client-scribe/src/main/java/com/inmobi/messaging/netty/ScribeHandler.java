@@ -76,7 +76,7 @@ public class ScribeHandler extends SimpleChannelHandler {
       case 0: // SUCCESS
         if (field.type == TType.I32) {
           success = ResultCode.findByValue(proto.readI32());
-	  long startTime = stats.getStartTime();
+	  	long startTime = stats.getStartTime();
           stats.accumulateOutcome(
               success.getValue() == 0 ? Outcome.SUCCESS
                   : Outcome.GRACEFUL_FAILURE, startTime);
