@@ -14,6 +14,8 @@ import java.util.concurrent.atomic.AtomicLong;
  * spent under normal circumstances i.e. free of unhandled exceptions
  */
 public class TimingAccumulator {
+
+	private long startTime = 0;
     
 	private final AtomicLong invocationCount = new AtomicLong(0);
 	
@@ -43,6 +45,7 @@ public class TimingAccumulator {
 	{
 		long r = System.nanoTime();
 		invocationCount.incrementAndGet();
+		startTime = r;
 		return r;
 	}
 	
@@ -84,7 +87,8 @@ public class TimingAccumulator {
     {
     	accumulateOutcome(o);
         long e = System.nanoTime();
-        accumulateTimeSpent(e - startTime);    	
+        accumulateTimeSpent(e - startTime);
+	this.startTime = e;    	
     }
     
     private void accumulateOutcome(Outcome o)
@@ -171,5 +175,13 @@ public class TimingAccumulator {
       hash.put("gracefulTerminates", getGracefulTerminates());
       hash.put("inFlight", getInFlight());
       return hash;
+    }
+
+    public long getStartTime() {
+      return startTime;
+    }
+
+    public void setStartTime(long startTime) {
+      this.startTime = startTime;
     }
 }

@@ -76,9 +76,10 @@ public class ScribeHandler extends SimpleChannelHandler {
       case 0: // SUCCESS
         if (field.type == TType.I32) {
           success = ResultCode.findByValue(proto.readI32());
-          stats.accumulateOutcomeWithDelta(
+	  long startTime = stats.getStartTime();
+          stats.accumulateOutcome(
               success.getValue() == 0 ? Outcome.SUCCESS
-                  : Outcome.GRACEFUL_FAILURE, 0);
+                  : Outcome.GRACEFUL_FAILURE, startTime);
         } else {
           TProtocolUtil.skip(proto, field.type);
         }
@@ -99,7 +100,8 @@ public class ScribeHandler extends SimpleChannelHandler {
 
     LOG.warn("Exception caught:", cause);
     if (!(cause instanceof ConnectException)) {
-      stats.accumulateOutcomeWithDelta(Outcome.UNHANDLED_FAILURE, 0);
+      long startTime = stats.getStartTime();
+      stats.accumulateOutcome(Outcome.UNHANDLED_FAILURE, startTime);
     }
 
     if (connectionInited && !reconnectInprogress) {

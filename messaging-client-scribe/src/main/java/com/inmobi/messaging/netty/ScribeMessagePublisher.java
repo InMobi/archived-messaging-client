@@ -185,7 +185,8 @@ public class ScribeMessagePublisher extends AbstractMessagePublisher {
 
     private void suggestReconnect() {
       LOG.warn("Suggesting reconnect as channel is null");
-      stats.accumulateOutcomeWithDelta(Outcome.UNHANDLED_FAILURE, 0);
+      long startTime = stats.getStartTime();
+      stats.accumulateOutcome(Outcome.UNHANDLED_FAILURE, startTime);
       // TODO: logic for triggering reconnect
     }
 
