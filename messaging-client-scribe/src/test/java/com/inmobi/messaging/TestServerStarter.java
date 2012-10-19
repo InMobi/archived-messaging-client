@@ -38,13 +38,40 @@ public class TestServerStarter {
 
   public static ScribeMessagePublisher createPublisher(int port, 
       int timeout) throws Exception {
+    return createPublisher(port, timeout, 5);
+  }
+
+  public static ScribeMessagePublisher createPublisher(int port, 
+      int timeout, int backOff) throws Exception {
+    return createPublisher(port, timeout, backOff, true, true);
+  }
+
+  public static ScribeMessagePublisher createPublisher(int port, 
+      int timeout, int backOff, boolean enableRetries, boolean resendOnAckLost)
+          throws Exception {
+    return createPublisher(port, timeout, backOff, enableRetries,
+        resendOnAckLost, 100, 100);
+  }
+
+  public static ScribeMessagePublisher createPublisher(int port, 
+      int timeout, int backOff, boolean enableRetries, boolean resendOnAckLost,
+      int msgQueueSize, int ackQueueSize)
+          throws Exception {
+    return createPublisher(port, timeout, backOff, enableRetries,
+        resendOnAckLost, msgQueueSize, ackQueueSize, -1);
+  }
+
+  public static ScribeMessagePublisher createPublisher(int port, 
+      int timeout, int backOff, boolean enableRetries, boolean resendOnAckLost,
+      int msgQueueSize, int ackQueueSize, int numRetries)
+          throws Exception {
     ScribeMessagePublisher pub = new ScribeMessagePublisher();
-    pub.init("localhost", port, 5, timeout, 1);
+    pub.init("localhost", port, backOff, timeout, enableRetries,
+        resendOnAckLost, 10, msgQueueSize, ackQueueSize, numRetries);
     return pub;
   }
 
   public static ScribeMessagePublisher createPublisher() throws Exception {
     return createPublisher(port, 5);
   }
-
 }

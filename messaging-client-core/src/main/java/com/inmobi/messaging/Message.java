@@ -61,4 +61,10 @@ public final class Message {
       return false;
     return true;
   }
+
+  @Override
+  public Message clone() {
+    Message m = new Message(data.duplicate());
+    return m;
+  }
 }

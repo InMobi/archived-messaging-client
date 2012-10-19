@@ -22,12 +22,17 @@ public class TimingAccumulator {
   public enum Outcome {
     SUCCESS,
     GRACEFUL_FAILURE,
-    UNHANDLED_FAILURE
+    UNHANDLED_FAILURE,
+    LOST,
+    RETRY
   }
 
   private final AtomicLong successCount = new AtomicLong(0);
   private final AtomicLong gracefulTerminates = new AtomicLong(0);	
   private final AtomicLong failureCount = new AtomicLong(0);
+  private final AtomicLong retryCount = new AtomicLong(0);
+  private final AtomicLong lostCount = new AtomicLong(0);
+  private final AtomicLong reconnectCount = new AtomicLong(0);
 
   /**
    * The number of times something was invoked.
@@ -43,6 +48,10 @@ public class TimingAccumulator {
     return r;
   }
 
+  public void accumulateReconnections() {
+    reconnectCount.incrementAndGet();
+  }
+
   /**
    * Accumulator for time spent in a call
    * Usually incremented only on successful returns
@@ -53,6 +62,14 @@ public class TimingAccumulator {
 
   private void accumulateFailure() {
     failureCount.incrementAndGet();
+  }
+
+  private void accumulateRetry() {
+    retryCount.incrementAndGet();
+  }
+
+  private void accumulateLost() {
+    lostCount.incrementAndGet();
   }
 
   /**
@@ -89,6 +106,12 @@ public class TimingAccumulator {
     case UNHANDLED_FAILURE:
       accumulateFailure();
       break;
+    case LOST:
+      accumulateLost();
+      break;
+    case RETRY:
+      accumulateRetry();
+      break;
     }
   }
 
@@ -100,6 +123,17 @@ public class TimingAccumulator {
     return successCount.get();
   }
 
+  public long getLostCount() {
+    return lostCount.get();
+  }
+
+  public long getRetryCount() {
+    return retryCount.get();
+  }
+
+  public long getReconnectionCount() {
+    return reconnectCount.get();
+  }
   public long getCumulativeNanoseconds() {
     return cumulativeNanoseconds.get();
   }
@@ -129,18 +163,18 @@ public class TimingAccumulator {
      * the values is allowed to fluctuate across readings in a busy system
      */
 
-    return getInvocationCount() - (getSuccessCount() + getGracefulTerminates()
-        + getUnhandledExceptionCount());
+    return getInvocationCount() - (getSuccessCount() + getLostCount()
+        + getGracefulTerminates());
   }
 
   @Override
   public String toString() {
     return String.format(" {\"nanos\": %d, \"invocations\": %d, \"success\": " +
-    		"%d, \"failures\": %d, \"terminates\": %d, " +
-        "\"in-flight\": %d  } ",
+    		"%d, \"failures\": %d, \"terminates\": %d, \"in-flight\": %d," +
+    		"  \"lost\": %d, \"retries\": %d, \"reconnections\": %d} ",
         getCumulativeNanoseconds(), getInvocationCount(), getSuccessCount(),
-        getUnhandledExceptionCount(),getGracefulTerminates(),
-        getInFlight());
+        getUnhandledExceptionCount(),getGracefulTerminates(), getInFlight(),
+        getLostCount(), getRetryCount(), getReconnectionCount());
   }
 
   public Map<String, Number> getMap() {
@@ -152,6 +186,9 @@ public class TimingAccumulator {
         getUnhandledExceptionCount());
     hash.put("gracefulTerminates", getGracefulTerminates());
     hash.put("inFlight", getInFlight());
+    hash.put("lost", getLostCount());
+    hash.put("retryCount", getRetryCount());
+    hash.put("reconnects", getReconnectionCount());
     return hash;
   }
 }

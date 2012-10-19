@@ -1,21 +1,22 @@
 package com.inmobi.messaging.netty;
 
-import java.net.ConnectException;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.channel.ChannelHandlerContext;
+import org.jboss.netty.channel.ChannelStateEvent;
 import org.jboss.netty.channel.ExceptionEvent;
 import org.jboss.netty.channel.MessageEvent;
 import org.jboss.netty.channel.SimpleChannelHandler;
+import org.jboss.netty.handler.timeout.ReadTimeoutException;
 import org.jboss.netty.util.Timeout;
 import org.jboss.netty.util.Timer;
 import org.jboss.netty.util.TimerTask;
 
 import com.inmobi.instrumentation.TimingAccumulator;
 import com.inmobi.instrumentation.TimingAccumulator.Outcome;
-import com.inmobi.messaging.netty.ScribeMessagePublisher.ScribeTopicPublisher.ChannelSetter;
+import com.inmobi.messaging.netty.ScribeTopicPublisher.ChannelSetter;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -38,17 +39,20 @@ public class ScribeHandler extends SimpleChannelHandler {
   private Timer timer;
   private boolean connectionInited = false;
   private volatile boolean reconnectInprogress = false;
-
   private final Semaphore lock = new Semaphore(1);
+  private final ScribeTopicPublisher thisPublisher;
+  private boolean exceptionDuringConnect = false;
+  private boolean closed = false;
 
   public ScribeHandler(TimingAccumulator stats, ChannelSetter channelSetter,
-      int backoffSeconds, Timer timer) {
+      int backoffSeconds, Timer timer, ScribeTopicPublisher publisher) {
     this.stats = stats;
     this.channelSetter = channelSetter;
     this.backoffSeconds = backoffSeconds;
     this.timer = timer;
+    thisPublisher = publisher;
   }
-  
+
   void setInited() {
     connectionInited = true;
   }
@@ -76,9 +80,7 @@ public class ScribeHandler extends SimpleChannelHandler {
       case 0: // SUCCESS
         if (field.type == TType.I32) {
           success = ResultCode.findByValue(proto.readI32());
-          stats.accumulateOutcomeWithDelta(
-              success.getValue() == 0 ? Outcome.SUCCESS
-                  : Outcome.GRACEFUL_FAILURE, 0);
+          thisPublisher.ack(success);
         } else {
           TProtocolUtil.skip(proto, field.type);
         }
@@ -98,46 +100,110 @@ public class ScribeHandler extends SimpleChannelHandler {
     Throwable cause = e.getCause();
 
     LOG.warn("Exception caught:", cause);
-    if (!(cause instanceof ConnectException)) {
-      stats.accumulateOutcomeWithDelta(Outcome.UNHANDLED_FAILURE, 0);
+    stats.accumulateOutcomeWithDelta(Outcome.UNHANDLED_FAILURE, 0);
+
+    if (cause instanceof ReadTimeoutException) {
+      if (!thisPublisher.isAckQueueEmpty()) {
+        LOG.info("Not reconnecting for ReadTimeout, as ackqueue is not empty");
+        return;
+      }
     }
 
-    if (connectionInited && !reconnectInprogress) {
-      if (ctx.getChannel().getId() == channelSetter.getCurrentChannel().getId()) {
-        scheduleReconnect();
-      } else {
-        LOG.info("Ignoring exception " + cause + " because it was on" + 
-             " channel" + ctx.getChannel().getId());
-      }
+    if (channelSetter.getCurrentChannel() != null && 
+        ctx.getChannel().getId() == channelSetter.getCurrentChannel().getId()) {
+      scheduleReconnect();
     } else {
-      LOG.info("Not reconnecting for exception:" + cause);
+      LOG.info("Ignoring exception " + cause + " because it was on" + 
+          " channel" + ctx.getChannel().getId());
     }
   }
 
-  private void scheduleReconnect() {
-    /*
-     * Ensure you are the only one mucking with connections If you find someone
-     * else is doing so, then you don't get a turn We trust this other person to
-     * do the needful
-     */
-    if (lock.tryAcquire()) {
-      long currentTime = System.currentTimeMillis();
-      // Check how long it has been since we reconnected
-      try {
-        if ((currentTime - connectRequestTime) / 1000 > backoffSeconds
-            && !reconnectInprogress) {
-          reconnectInprogress = true;
-          connectRequestTime = currentTime;
-          timer.newTimeout(new TimerTask() {
-            public void run(Timeout timeout) throws Exception {
-              channelSetter.connect();
-              reconnectInprogress = false;
+  void scheduleReconnect() {
+    if (!closed && connectionInited) {
+      if (!reconnectInprogress || exceptionDuringConnect) {
+        /*
+         * Ensure you are the only one mucking with connections If you find someone
+         * else is doing so, then you don't get a turn We trust this other person to
+         * do the needful
+         */
+        if (lock.tryAcquire()) {
+          long currentTime = System.currentTimeMillis();
+          // Check how long it has been since we reconnected
+          try {
+            if ((currentTime - connectRequestTime) / 1000 > backoffSeconds
+                && !reconnectInprogress) {
+              prepareReconnect();
+              reconnectInprogress = true;
+              connectRequestTime = currentTime;
+              timer.newTimeout(new TimerTask() {
+                
+                public void run(Timeout timeout) throws Exception {
+                  LOG.info("Connecting now");
+                  try {
+                    channelSetter.connect();
+                  } catch (Exception e) {
+                    LOG.warn("got exception during connect");
+                    setExceptionDuringConnect();
+                    return;
+                  }
+                  stats.accumulateReconnections();
+                  reconnectInprogress = false;
+                  thisPublisher.doneReconnect();
+                }
+              }, backoffSeconds, TimeUnit.SECONDS);
             }
-          }, backoffSeconds, TimeUnit.SECONDS);
+          } finally {
+            lock.release();
+          }
         }
-      } finally {
-        lock.release();
+
+      } else {
+        LOG.info("Not connecting now, because connection is already in " +
+            "progress");
       }
+    } else {
+      LOG.info("Not connecting, because connection is not intialized or is" +
+          " closed");
     }
+  }
+
+  public void channelDisconnected(ChannelHandlerContext ctx,
+      ChannelStateEvent e) {
+    if (channelSetter.getCurrentChannel() != null && 
+        ctx.getChannel().getId() == channelSetter.getCurrentChannel().getId()) {
+      LOG.info("Channel disconnected");
+      scheduleReconnect();
+    }
+  }
+
+  public void channelClosed(ChannelHandlerContext ctx, ChannelStateEvent e) {
+    if (channelSetter.getCurrentChannel() != null && 
+        ctx.getChannel().getId() == channelSetter.getCurrentChannel().getId()) {
+      LOG.info("Channel closed");
+      scheduleReconnect();
+    }
+  }
+
+  public void channelUnbound(ChannelHandlerContext ctx, ChannelStateEvent e) {
+    if (channelSetter.getCurrentChannel() != null && 
+        ctx.getChannel().getId() == channelSetter.getCurrentChannel().getId()) {
+      LOG.info("Channel unbound");
+      scheduleReconnect();
+    }
+  }
+
+  private void prepareReconnect() {
+    exceptionDuringConnect = false;    
+    thisPublisher.prepareReconnect();    
+  }
+
+  void setExceptionDuringConnect() {
+    exceptionDuringConnect = true;
+    reconnectInprogress = false;
+    scheduleReconnect();
+  }
+
+  void prepareClose() {
+    closed = true;
   }
 }

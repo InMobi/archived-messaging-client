@@ -12,11 +12,11 @@ import scribe.thrift.LogEntry;
 import scribe.thrift.ResultCode;
 import scribe.thrift.scribe.Iface;
 
-public class ScribeSlacker implements Iface {
+public class ScribeAlternateTryLater implements Iface {
 
   private Logger logger;
 
-  public ScribeSlacker() {
+  public ScribeAlternateTryLater() {
     logger = Logger.getLogger("scribeserver");
   }
 
@@ -98,14 +98,20 @@ public class ScribeSlacker implements Iface {
 
   }
 
+  boolean trylater = true;
   @Override
   public ResultCode Log(List<LogEntry> messages) throws TException {
-    try {
-      System.err.println("server is slacking");
-      Thread.sleep(5000);
-    } catch (InterruptedException e) {
-      throw new TException(e);
+    if (logger.isInfoEnabled()) {
+      for (LogEntry m : messages) {
+        logger.info(m.getCategory() + ":" + m.getMessage());
+      }
     }
-    return ResultCode.OK;
+    if (trylater) {
+      trylater = false;
+      return ResultCode.TRY_LATER;
+    } else {
+      return ResultCode.OK; 
+    }
   }
+
 }
