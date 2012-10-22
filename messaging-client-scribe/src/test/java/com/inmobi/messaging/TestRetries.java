@@ -10,6 +10,7 @@ import org.testng.annotations.Test;
 import random.pkg.NtMultiServer;
 import random.pkg.ScribeAlternateTryLater;
 import random.pkg.ScribeAlwaysTryAgain;
+import random.pkg.ScribeSlacker;
 
 import com.inmobi.instrumentation.TimingAccumulator;
 import com.inmobi.messaging.netty.ScribeMessagePublisher;
@@ -30,7 +31,7 @@ public class TestRetries {
       mb.close();
   }
 
-  @Test
+  //@Test
   public void simpleSend() throws Exception {
     NtMultiServer tserver = null;
     try {
@@ -57,7 +58,7 @@ public class TestRetries {
     }
   }
 
-  @Test
+  //@Test
   public void testEnableRetries() throws Exception {
     testEnableRetries(true);
     testEnableRetries(false);
@@ -97,7 +98,7 @@ public class TestRetries {
     }
   }
 
-  @Test
+  //@Test
   public void testAlwaysTryAgain() throws Exception {
     NtMultiServer tserver = null;
     try {
@@ -126,4 +127,46 @@ public class TestRetries {
       tserver.stop();
     }
   }
+
+  @Test
+  public void testResendOnAckLost() throws Exception {
+    testResendOnAckLost(true);
+    testResendOnAckLost(false);
+  }
+
+  public void testResendOnAckLost(boolean resendOnAckLost) throws Exception {
+    NtMultiServer tserver = null;
+    try {
+      int port = 7904;
+      tserver = new NtMultiServer(new ScribeSlacker(), port);
+      tserver.start();
+
+      int timeoutSeconds = 20;
+      mb = TestServerStarter.createPublisher(port, timeoutSeconds, 1,
+          true, resendOnAckLost);
+
+      String topic = "retry";
+      // publish a message and stop the server
+      // ack will be lost for the above message. then start the server again
+      mb.publish(topic, new Message("mmmm".getBytes()));
+      Thread.sleep(500);
+      tserver.stop();
+      tserver.start();
+      mb.close();
+      TimingAccumulator inspector = mb.getStats(topic);
+      System.out.println("stats:" + inspector.toString());
+      assertEquals(inspector.getInFlight(), 0,
+          "ensure not considered midflight");
+      if (resendOnAckLost) {
+        assertEquals(inspector.getSuccessCount(), 1,
+            "success not incremented");
+      } else {
+        assertEquals(inspector.getGracefulTerminates(), 1,
+            "Graceful terminates not incremented");
+      }
+    } finally {
+      tserver.stop();
+    }
+  }
+
 }

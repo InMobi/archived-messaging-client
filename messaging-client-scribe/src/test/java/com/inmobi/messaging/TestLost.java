@@ -3,8 +3,6 @@ package com.inmobi.messaging;
 import static org.testng.Assert.assertEquals;
 
 import org.testng.Assert;
-import org.testng.annotations.AfterTest;
-import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
 
 import random.pkg.NtMultiServer;
@@ -16,21 +14,6 @@ import com.inmobi.instrumentation.TimingAccumulator;
 import com.inmobi.messaging.netty.ScribeMessagePublisher;
 
 public class TestLost {
-  private NtMultiServer server;
-  private ScribeMessagePublisher mb;
-
-  @BeforeTest
-  public void setUp() {
-    server = TestServerStarter.getServer();
-  }
-
-  @AfterTest
-  public void tearDown() {
-    server.stop();
-    if (mb != null)
-      mb.close();
-  }
-
   @Test()
   public void testMsgQueueSize() throws Exception {
     NtMultiServer tserver = null;
@@ -40,8 +23,8 @@ public class TestLost {
 
       int timeoutSeconds = 2;
       // create publisher with msg queue size 1
-      mb = TestServerStarter.createPublisher(port, timeoutSeconds, 1, true,
-          true, 1, 10);
+      ScribeMessagePublisher mb = TestServerStarter.createPublisher(port,
+          timeoutSeconds, 1, true, true, 1, 10);
 
       String topic = "retry";
       // publish two messages
@@ -77,8 +60,8 @@ public class TestLost {
 
       int timeoutSeconds = 2;
       // create publisher with msgqueue size 1
-      mb = TestServerStarter.createPublisher(port, timeoutSeconds, 1, true,
-          true, 1, 1);
+      ScribeMessagePublisher mb = TestServerStarter.createPublisher(port,
+          timeoutSeconds, 1, true, true, 1, 1);
 
       String topic = "retry";
       // publish 3 messages
@@ -114,8 +97,8 @@ public class TestLost {
 
       int timeoutSeconds = 2;
       // create publisher with msgqueue size 1
-      mb = TestServerStarter.createPublisher(port, timeoutSeconds, 1, true,
-          true, 1, 1, 10);
+      ScribeMessagePublisher mb = TestServerStarter.createPublisher(port,
+          timeoutSeconds, 1, true, true, 1, 1, 10);
 
       String topic = "retry";
       // publish 3 messages

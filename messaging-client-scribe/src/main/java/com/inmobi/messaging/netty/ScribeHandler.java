@@ -66,6 +66,7 @@ public class ScribeHandler extends SimpleChannelHandler {
     TMemoryInputTransport trans = new TMemoryInputTransport(buf.array());
     TBinaryProtocol proto = new TBinaryProtocol(trans);
     TMessage msg = proto.readMessageBegin();
+    LOG.info("Msg type:" + msg.type);
     if (msg.type == TMessageType.EXCEPTION) {
       proto.readMessageEnd();
     }
