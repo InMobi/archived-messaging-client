@@ -1,3 +1,26 @@
+Release 1.4.0 - 2012-10-25
+
+Bug Fixes and Improvements:
+
+    10. Modify seqgen to wait for all messages to be sent before closing
+
+    8. Allow float value for number of messages per second sothat fractional values can be given
+
+    9. Change example publishers not wait for messages to be sent fully, since close is graceful now
+
+    7. Add retrying and buffering capability to scribe publisher
+
+    6. Close publisher super class at the end i.e. after closing all the connections
+
+    5. Fix indentation in TimingAccumulator
+
+    4. Add message size parameter to the benchmark
+
+    3. Throw illegalArgumentException if topic or message is null
+
+    2. Add thirdparty inmobi repository to pom.xml
+
+    1. Add mondemand dependency to messaging-client-core
 Release 1.3.0 - 2012-09-03
 Incompatible changes:
     1. Publisher to emit stats for each topic.  
