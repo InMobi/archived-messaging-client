@@ -13,6 +13,7 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.Text;
 
 import com.inmobi.databus.readers.DatabusStreamWaitingReader;
+import com.inmobi.messaging.consumer.databus.MessageCheckpoint;
 import com.inmobi.messaging.metrics.PartitionReaderStatsExposer;
 
 public class ClusterReader extends AbstractPartitionStreamReader {
@@ -74,5 +75,10 @@ public class ClusterReader extends AbstractPartitionStreamReader {
       return text.getBytes();
     } 
     return line;
+  }
+
+  @Override
+  public MessageCheckpoint getMessageCheckpoint() {
+    return msgChkpoint;
   }
 }

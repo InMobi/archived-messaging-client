@@ -176,4 +176,10 @@ public class DatabusConsumer extends AbstractMessagingDatabusConsumer
   Path[] getRootDirs() {
     return rootDirs;
   }
+
+  @Override
+  protected void createCheckpoint() {
+    // TODO Auto-generated method stub
+    
+  }
 }

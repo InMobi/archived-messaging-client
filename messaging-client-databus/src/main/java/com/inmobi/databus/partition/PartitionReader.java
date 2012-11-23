@@ -212,8 +212,7 @@ public class PartitionReader {
           }
           buffer.put(new QueueEntry(new Message(
               ByteBuffer.wrap(data)), partitionId,
-              new PartitionCheckpoint(reader.getCurrentFile(),
-                  reader.getCurrentLineNum())));
+              reader.getMessageCheckpoint()));
           prMetrics.incrementMessagesAddedToBuffer();
         } else {
           LOG.info("No stream to read");

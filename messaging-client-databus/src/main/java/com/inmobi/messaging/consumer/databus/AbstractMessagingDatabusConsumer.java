@@ -36,7 +36,7 @@ public abstract class AbstractMessagingDatabusConsumer
       new HashMap<PartitionId, PartitionReader>();
 
   protected CheckpointProvider checkpointProvider;
-  protected Checkpoint currentCheckpoint;
+  protected ConsumerCheckpoint currentCheckpoint;
   protected long waitTimeForFileCreate;
   protected int bufferSize;
   protected DataEncodingType dataEncodingType;
@@ -99,14 +99,8 @@ public abstract class AbstractMessagingDatabusConsumer
     this.checkpointProvider = createCheckpointProvider(
         chkpointProviderClassName, databusCheckpointDir);
 
-    byte[] chkpointData = checkpointProvider.read(getChkpointKey());
-    if (chkpointData != null) {
-      this.currentCheckpoint = new Checkpoint(chkpointData);
-    } else {
-      Map<PartitionId, PartitionCheckpoint> partitionsChkPoints = 
-          new HashMap<PartitionId, PartitionCheckpoint>();
-      this.currentCheckpoint = new Checkpoint(partitionsChkPoints);
-    }
+    createCheckpoint();
+    currentCheckpoint.read(checkpointProvider, getChkpointKey());
 
     //create buffer
     bufferSize = config.getInteger(queueSizeConfig, DEFAULT_QUEUE_SIZE);
@@ -123,13 +117,16 @@ public abstract class AbstractMessagingDatabusConsumer
         DEFAULT_RETENTION_HOURS); 
 
     LOG.debug("Using data encoding type as " + dataEncodingType);
+
   }
+
+  protected abstract void createCheckpoint();
 
   public Map<PartitionId, PartitionReader> getPartitionReaders() {
     return readers;
   }
 
-  public Checkpoint getCurrentCheckpoint() {
+  public ConsumerCheckpoint getCurrentCheckpoint() {
     return currentCheckpoint;
   }
 
@@ -137,7 +134,7 @@ public abstract class AbstractMessagingDatabusConsumer
   protected Message getNext() throws InterruptedException {
     QueueEntry entry;
     entry = buffer.take();
-    currentCheckpoint.set(entry.getPartitionId(), entry.getPartitionChkpoint());
+    currentCheckpoint.set(entry.getPartitionId(), entry.getMessageChkpoint());
     return entry.getMessage();
   }
 
@@ -179,8 +176,7 @@ public abstract class AbstractMessagingDatabusConsumer
     // restart the service, consumer will start streaming from the last saved
     // checkpoint
     close();
-    this.currentCheckpoint = new Checkpoint(
-        checkpointProvider.read(getChkpointKey()));
+    this.currentCheckpoint.read(checkpointProvider, getChkpointKey());
     LOG.info("Resetting to checkpoint:" + currentCheckpoint);
     // reset to last marked position, ignore start time
     startTime = null;
@@ -190,8 +186,7 @@ public abstract class AbstractMessagingDatabusConsumer
 
   @Override
   protected void doMark() throws IOException {
-    checkpointProvider.checkpoint(getChkpointKey(),
-        currentCheckpoint.toBytes());
+    currentCheckpoint.write(checkpointProvider, getChkpointKey());
     LOG.info("Committed checkpoint:" + currentCheckpoint);
   }
 

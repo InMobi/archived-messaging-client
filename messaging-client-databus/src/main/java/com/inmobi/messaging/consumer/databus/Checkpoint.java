@@ -12,6 +12,7 @@ import java.util.Map;
 
 import org.apache.hadoop.io.Writable;
 
+import com.inmobi.databus.CheckpointProvider;
 import com.inmobi.databus.partition.PartitionCheckpoint;
 import com.inmobi.databus.partition.PartitionId;
 
@@ -21,7 +22,7 @@ import com.inmobi.databus.partition.PartitionId;
  * It holds checkpoint for all the partitions.
  *
  */
-public class Checkpoint implements Writable {
+public class Checkpoint implements Writable, ConsumerCheckpoint {
 
   // map of partitionId to partition
   private Map<PartitionId, PartitionCheckpoint> partitionsChkPoint =
@@ -48,6 +49,10 @@ public class Checkpoint implements Writable {
 
   void set(PartitionId partitionId, PartitionCheckpoint partCheckpoint) {
     partitionsChkPoint.put(partitionId, partCheckpoint);
+  }
+
+  public void set(PartitionId partitionId, MessageCheckpoint partCheckpoint) {
+    this.set(partitionId, (PartitionCheckpoint)partCheckpoint);
   }
 
   @Override
@@ -119,5 +124,20 @@ public class Checkpoint implements Writable {
       buf.append(", ");
     }
     return buf.toString();
+  }
+
+  @Override
+  public void read(CheckpointProvider checkpointProvider, String key)
+      throws IOException {
+    byte[] chkpointData = checkpointProvider.read(key);
+    if (chkpointData != null) {
+      readFields(new DataInputStream(new ByteArrayInputStream(chkpointData)));
+    }
+  }
+
+  @Override
+  public void write(CheckpointProvider checkpointProvider, String key)
+      throws IOException {
+    checkpointProvider.checkpoint(key, this.toBytes());    
   }
 }

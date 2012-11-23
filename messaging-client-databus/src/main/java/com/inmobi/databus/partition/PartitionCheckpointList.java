@@ -4,12 +4,13 @@ import java.util.Map;
 import java.util.TreeMap;
 
 import com.inmobi.databus.partition.PartitionCheckpoint;
+import com.inmobi.messaging.consumer.databus.MessageCheckpoint;
 
 /**
  * Checkpoint for the segments of databus stream consumer. 
  * 
  */
-public class PartitionCheckpointList {
+public class PartitionCheckpointList implements MessageCheckpoint {
 
   // map of static id to its checkpoint
   private Map<Integer, PartitionCheckpoint> pChkpoints =

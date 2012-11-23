@@ -15,6 +15,7 @@ import org.apache.hadoop.io.Text;
 import com.inmobi.databus.files.DatabusStreamFile;
 import com.inmobi.databus.readers.CollectorStreamReader;
 import com.inmobi.databus.readers.LocalStreamCollectorReader;
+import com.inmobi.messaging.consumer.databus.MessageCheckpoint;
 import com.inmobi.messaging.metrics.CollectorReaderStatsExposer;
 
 public class CollectorReader extends AbstractPartitionStreamReader {
@@ -172,6 +173,12 @@ public class CollectorReader extends AbstractPartitionStreamReader {
       }
     }
     return line;
+  }
+
+  @Override
+  public MessageCheckpoint getMessageCheckpoint() {
+    return new PartitionCheckpoint(reader.getCurrentStreamFile(),
+        reader.getCurrentLineNum());
   }
 
 }

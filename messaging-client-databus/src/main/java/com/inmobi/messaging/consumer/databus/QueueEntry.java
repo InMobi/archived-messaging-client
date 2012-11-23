@@ -1,6 +1,5 @@
 package com.inmobi.messaging.consumer.databus;
 
-import com.inmobi.databus.partition.PartitionCheckpoint;
 import com.inmobi.databus.partition.PartitionId;
 import com.inmobi.messaging.Message;
 
@@ -8,21 +7,21 @@ public class QueueEntry {
 
   private final Message message;
   private final PartitionId partitionId;
-  private final PartitionCheckpoint partitionChkpoint;
+  private final MessageCheckpoint msgCheckpoint;
 
   public QueueEntry(Message msg, PartitionId partitionId,
-      PartitionCheckpoint partitionChkpoint) {
+      MessageCheckpoint msgCheckpoint) {
     this.message = msg;
     this.partitionId = partitionId;
-    this.partitionChkpoint = partitionChkpoint;
+    this.msgCheckpoint = msgCheckpoint;
   }
 
   public PartitionId getPartitionId() {
     return partitionId;
   }
 
-  public PartitionCheckpoint getPartitionChkpoint() {
-    return partitionChkpoint;
+  public MessageCheckpoint getMessageChkpoint() {
+    return msgCheckpoint;
   }
 
   public Message getMessage() {

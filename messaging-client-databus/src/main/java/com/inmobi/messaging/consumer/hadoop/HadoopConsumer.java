@@ -13,6 +13,7 @@ import com.inmobi.databus.partition.PartitionId;
 import com.inmobi.databus.partition.PartitionReader;
 import com.inmobi.messaging.ClientConfig;
 import com.inmobi.messaging.consumer.databus.AbstractMessagingDatabusConsumer;
+import com.inmobi.messaging.consumer.databus.CheckpointList;
 import com.inmobi.messaging.metrics.PartitionReaderStatsExposer;
 
 public class HadoopConsumer extends AbstractMessagingDatabusConsumer 
@@ -93,5 +94,10 @@ public class HadoopConsumer extends AbstractMessagingDatabusConsumer
   
   Path[] getRootDirs() {
     return rootDirs;
+  }
+
+  @Override
+  protected void createCheckpoint() {
+    currentCheckpoint = new CheckpointList(idList);
   }
 }
