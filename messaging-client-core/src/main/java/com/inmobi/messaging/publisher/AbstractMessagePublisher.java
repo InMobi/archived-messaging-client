@@ -38,13 +38,14 @@ public abstract class AbstractMessagePublisher implements MessagePublisher {
     if (m == null) {
       throw new IllegalArgumentException("Cannot publish null message");
     }
-    if (getStats(topicName) == null) {
-      TimingAccumulator stats = new TimingAccumulator();
-      initTopicStats(topicName, stats);
+    synchronized(this){
+      if (getStats(topicName) == null) {
+        TimingAccumulator stats = new TimingAccumulator();
+        initTopicStats(topicName, stats);
+      }
+      getStats(topicName).accumulateInvocation();
+      initTopic(topicName, getStats(topicName));
     }
-    getStats(topicName).accumulateInvocation();
-    initTopic(topicName, getStats(topicName));
-
     // TODO: generate headers
     Map<String, String> headers = new HashMap<String, String>();
     headers.put(HEADER_TOPIC, topicName);
