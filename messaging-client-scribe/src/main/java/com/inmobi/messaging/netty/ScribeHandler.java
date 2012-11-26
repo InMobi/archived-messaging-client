@@ -80,7 +80,14 @@ public class ScribeHandler extends SimpleChannelHandler {
       case 0: // SUCCESS
         if (field.type == TType.I32) {
           success = ResultCode.findByValue(proto.readI32());
+<<<<<<< HEAD
           thisPublisher.ack(success);
+=======
+	  		long startTime = stats.getStartTime();
+          stats.accumulateOutcome(
+              success.getValue() == 0 ? Outcome.SUCCESS
+                  : Outcome.GRACEFUL_FAILURE, startTime);
+>>>>>>> 8308660be5f13041ae893f404ecaf8ffb2d775e1
         } else {
           TProtocolUtil.skip(proto, field.type);
         }
@@ -100,7 +107,14 @@ public class ScribeHandler extends SimpleChannelHandler {
     Throwable cause = e.getCause();
 
     LOG.warn("Exception caught:", cause);
+<<<<<<< HEAD
     stats.accumulateOutcomeWithDelta(Outcome.UNHANDLED_FAILURE, 0);
+=======
+    if (!(cause instanceof ConnectException)) {
+      long startTime = stats.getStartTime();
+      stats.accumulateOutcome(Outcome.UNHANDLED_FAILURE, startTime);
+    }
+>>>>>>> 8308660be5f13041ae893f404ecaf8ffb2d775e1
 
     if (cause instanceof ReadTimeoutException) {
       if (!thisPublisher.isAckQueueEmpty()) {

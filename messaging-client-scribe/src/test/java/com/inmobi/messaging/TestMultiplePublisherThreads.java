@@ -47,6 +47,7 @@ public class TestMultiplePublisherThreads {
     p2.join();
     p3.join();
     p4.join();
+    publisher.close();
     System.out.println(publisher.getStats(topic));
     assertEquals(publisher.getStats(topic).getSuccessCount(), 4);
     assertEquals(publisher.getStats(topic).getRetryCount(),0);
@@ -79,7 +80,6 @@ public class TestMultiplePublisherThreads {
       
     public void run(){
         doTest(topic, publisher);
-        publisher.close();
     }
   }
 }
