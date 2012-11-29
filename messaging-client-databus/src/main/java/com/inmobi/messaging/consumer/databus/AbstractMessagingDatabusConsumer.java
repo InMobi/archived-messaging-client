@@ -21,7 +21,7 @@ import com.inmobi.instrumentation.AbstractMessagingClientStatsExposer;
 import com.inmobi.messaging.ClientConfig;
 import com.inmobi.messaging.Message;
 import com.inmobi.messaging.consumer.AbstractMessageConsumer;
-import com.inmobi.messaging.consumer.BaseMessageConsumerStatsExposer;
+import com.inmobi.messaging.metrics.DatabusConsumerStatsExposer;
 
 public abstract class AbstractMessagingDatabusConsumer 
     extends AbstractMessageConsumer 
@@ -117,7 +117,6 @@ public abstract class AbstractMessagingDatabusConsumer
         DEFAULT_RETENTION_HOURS); 
 
     LOG.debug("Using data encoding type as " + dataEncodingType);
-
   }
 
   protected abstract void createCheckpoint();
@@ -208,6 +207,7 @@ public abstract class AbstractMessagingDatabusConsumer
 
   @Override
   protected AbstractMessagingClientStatsExposer getMetricsImpl() {
-    return new BaseMessageConsumerStatsExposer(topicName, consumerName);
+    return new DatabusConsumerStatsExposer(topicName, consumerName,
+        consumerNumber);
   }
 }
