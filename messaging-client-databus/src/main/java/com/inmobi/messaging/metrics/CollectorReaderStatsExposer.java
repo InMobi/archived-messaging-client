@@ -17,8 +17,8 @@ public class CollectorReaderStatsExposer extends PartitionReaderStatsExposer {
   private final AtomicLong numWaitTimeUnitsInSameFile = new AtomicLong(0);
 
   public CollectorReaderStatsExposer(String topicName, String consumerName,
-      String pid) {
-    super(topicName, consumerName, pid);
+      String pid, int consumerNumber) {
+    super(topicName, consumerName, pid, consumerNumber);
   }
 
   public void incrementSwitchesFromCollectorToLocal() {

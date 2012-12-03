@@ -95,6 +95,7 @@ public abstract class AbstractMessageConsumer implements MessageConsumer {
         startTime.after(new Date(System.currentTimeMillis()))) {
       throw new IllegalArgumentException("Future start time is not accepted");
     }
+    init(config);
     metrics = (BaseMessageConsumerStatsExposer) getMetricsImpl();
     String emitterConfig = config
         .getString(MessageConsumerFactory.EMITTER_CONF_FILE_KEY);
@@ -102,7 +103,6 @@ public abstract class AbstractMessageConsumer implements MessageConsumer {
       statsEmitter.init(emitterConfig);
       statsEmitter.add(metrics);
     }
-    init(config);
   }
 
   /**

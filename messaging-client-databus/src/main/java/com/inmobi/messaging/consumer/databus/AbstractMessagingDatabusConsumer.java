@@ -2,8 +2,10 @@ package com.inmobi.messaging.consumer.databus;
 
 import java.io.IOException;
 import java.lang.reflect.Constructor;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -13,7 +15,6 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.security.UserGroupInformation;
 
 import com.inmobi.databus.CheckpointProvider;
-import com.inmobi.databus.partition.PartitionCheckpoint;
 import com.inmobi.databus.partition.PartitionId;
 import com.inmobi.databus.partition.PartitionReader;
 import com.inmobi.databus.utils.SecureLoginUtil;
@@ -21,7 +22,7 @@ import com.inmobi.instrumentation.AbstractMessagingClientStatsExposer;
 import com.inmobi.messaging.ClientConfig;
 import com.inmobi.messaging.Message;
 import com.inmobi.messaging.consumer.AbstractMessageConsumer;
-import com.inmobi.messaging.consumer.BaseMessageConsumerStatsExposer;
+import com.inmobi.messaging.metrics.DatabusConsumerStatsExposer;
 
 public abstract class AbstractMessagingDatabusConsumer 
     extends AbstractMessageConsumer 
@@ -36,14 +37,14 @@ public abstract class AbstractMessagingDatabusConsumer
       new HashMap<PartitionId, PartitionReader>();
 
   protected CheckpointProvider checkpointProvider;
-  protected Checkpoint currentCheckpoint;
+  protected ConsumerCheckpoint currentCheckpoint;
   protected long waitTimeForFileCreate;
   protected int bufferSize;
   protected DataEncodingType dataEncodingType;
   protected int retentionInHours;
   protected int consumerNumber;
   protected int totalConsumers;
-
+  public List<Integer> partitionMinList;
   @Override
   protected void init(ClientConfig config) throws IOException {
     initializeConfig(config);
@@ -87,6 +88,16 @@ public abstract class AbstractMessagingDatabusConsumer
     try {
       consumerNumber = Integer.parseInt(id[0]);
       totalConsumers = Integer.parseInt(id[1]);
+      partitionMinList = new ArrayList<Integer>();
+      if (consumerNumber > 0 && totalConsumers > 0) {
+      	for (int i = 0; i < 60; i++) {
+      		if ((i % totalConsumers) == (consumerNumber - 1)) {
+      			partitionMinList.add(i);
+      		}
+      	}
+      } else {
+      	LOG.info("Invalid consumer group membership");
+      }
     } catch (NumberFormatException nfe) {
       throw new IllegalArgumentException("Invalid consumer group membership",
           nfe);
@@ -99,14 +110,8 @@ public abstract class AbstractMessagingDatabusConsumer
     this.checkpointProvider = createCheckpointProvider(
         chkpointProviderClassName, databusCheckpointDir);
 
-    byte[] chkpointData = checkpointProvider.read(getChkpointKey());
-    if (chkpointData != null) {
-      this.currentCheckpoint = new Checkpoint(chkpointData);
-    } else {
-      Map<PartitionId, PartitionCheckpoint> partitionsChkPoints = 
-          new HashMap<PartitionId, PartitionCheckpoint>();
-      this.currentCheckpoint = new Checkpoint(partitionsChkPoints);
-    }
+    createCheckpoint();
+    currentCheckpoint.read(checkpointProvider, getChkpointKey());
 
     //create buffer
     bufferSize = config.getInteger(queueSizeConfig, DEFAULT_QUEUE_SIZE);
@@ -129,15 +134,21 @@ public abstract class AbstractMessagingDatabusConsumer
     return readers;
   }
 
-  public Checkpoint getCurrentCheckpoint() {
-    return currentCheckpoint;
+  protected abstract void createCheckpoint();
+
+  public List<Integer> getPartitionMinList() {
+  	return partitionMinList;
+  }
+
+  public ConsumerCheckpoint getCurrentCheckpoint() {
+  	return currentCheckpoint;
   }
 
   @Override
   protected Message getNext() throws InterruptedException {
     QueueEntry entry;
     entry = buffer.take();
-    currentCheckpoint.set(entry.getPartitionId(), entry.getPartitionChkpoint());
+    currentCheckpoint.set(entry.getPartitionId(), entry.getMessageChkpoint());
     return entry.getMessage();
   }
 
@@ -150,7 +161,7 @@ public abstract class AbstractMessagingDatabusConsumer
 
   protected abstract void createPartitionReaders() throws IOException;
 
-  protected Date getPartitionTimestamp(PartitionId id, PartitionCheckpoint pck,
+  protected Date getPartitionTimestamp(PartitionId id, ConsumerCheckpoint pck,
       Date allowedStartTime) {
     Date partitionTimestamp = startTime;
     if (startTime == null && pck == null) {
@@ -179,8 +190,7 @@ public abstract class AbstractMessagingDatabusConsumer
     // restart the service, consumer will start streaming from the last saved
     // checkpoint
     close();
-    this.currentCheckpoint = new Checkpoint(
-        checkpointProvider.read(getChkpointKey()));
+    currentCheckpoint.read(checkpointProvider, getChkpointKey());
     LOG.info("Resetting to checkpoint:" + currentCheckpoint);
     // reset to last marked position, ignore start time
     startTime = null;
@@ -190,8 +200,7 @@ public abstract class AbstractMessagingDatabusConsumer
 
   @Override
   protected void doMark() throws IOException {
-    checkpointProvider.checkpoint(getChkpointKey(),
-        currentCheckpoint.toBytes());
+  	currentCheckpoint.write(checkpointProvider, getChkpointKey());
     LOG.info("Committed checkpoint:" + currentCheckpoint);
   }
 
@@ -213,6 +222,7 @@ public abstract class AbstractMessagingDatabusConsumer
 
   @Override
   protected AbstractMessagingClientStatsExposer getMetricsImpl() {
-    return new BaseMessageConsumerStatsExposer(topicName, consumerName);
+    return new DatabusConsumerStatsExposer(topicName, consumerName,
+        consumerNumber);
   }
 }

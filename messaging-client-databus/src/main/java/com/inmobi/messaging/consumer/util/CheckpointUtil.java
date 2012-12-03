@@ -43,7 +43,7 @@ public class CheckpointUtil {
       LOG.info("Old checkpoint is not available nothing to prepare");
       return;
     } 
-    CheckpointList checkpointList = new CheckpointList(idList, provider, superKey);
+    CheckpointList checkpointList = new CheckpointList(idList);
 
     // fill the entries in checkpoint list
     Map<PartitionId, PartitionCheckpoint> partitionCheckpoints = 
@@ -102,7 +102,7 @@ public class CheckpointUtil {
       checkpointList.set(entry.getKey(), new PartitionCheckpointList(
           thisChkpoint));
     }
-    checkpointList.write();
+    checkpointList.write(provider, superKey);
   }
 
   private static FileStatus getLast(final Path minDir)

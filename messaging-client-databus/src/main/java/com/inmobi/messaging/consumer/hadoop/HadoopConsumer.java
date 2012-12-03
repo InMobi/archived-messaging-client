@@ -3,16 +3,19 @@ package com.inmobi.messaging.consumer.hadoop;
 import java.io.IOException;
 import java.util.Date;
 import java.util.Map;
+import java.util.TreeMap;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 
 import com.inmobi.databus.partition.PartitionCheckpoint;
+import com.inmobi.databus.partition.PartitionCheckpointList;
 import com.inmobi.databus.partition.PartitionId;
 import com.inmobi.databus.partition.PartitionReader;
 import com.inmobi.messaging.ClientConfig;
 import com.inmobi.messaging.consumer.databus.AbstractMessagingDatabusConsumer;
+import com.inmobi.messaging.consumer.databus.CheckpointList;
 import com.inmobi.messaging.metrics.PartitionReaderStatsExposer;
 
 public class HadoopConsumer extends AbstractMessagingDatabusConsumer 
@@ -60,28 +63,32 @@ public class HadoopConsumer extends AbstractMessagingDatabusConsumer
     for (int i= 0; i < clusterNames.length; i++) {
       String clusterName = clusterNames[i];
       LOG.debug("Creating partition reader for cluster:" + clusterName);
-      Map<PartitionId, PartitionCheckpoint> partitionsChkPoints = 
-          currentCheckpoint.getPartitionsCheckpoint();
-
+     
       // create partition id
       PartitionId id = new PartitionId(clusterName, null);
-      if (partitionsChkPoints.get(id) == null) {
-        partitionsChkPoints.put(id, null);
-      }
+      Map<Integer, PartitionCheckpoint> listofPartitionCheckpoints = new 
+      		TreeMap<Integer, PartitionCheckpoint>();
+
+      PartitionCheckpointList partitionCheckpointList = new 
+      		PartitionCheckpointList(listofPartitionCheckpoints);    
+      ((CheckpointList)currentCheckpoint).preaprePartitionCheckPointList(id, 
+      		partitionCheckpointList);   
 
       // calculate the allowed start time
       long currentMillis = System.currentTimeMillis();
       Date allowedStartTime = new Date(currentMillis - 
           (retentionInHours * ONE_HOUR_IN_MILLIS));
       Date partitionTimestamp = getPartitionTimestamp(id,
-          partitionsChkPoints.get(id), allowedStartTime);
-      PartitionReaderStatsExposer clusterMetrics = new 
-          PartitionReaderStatsExposer(topicName, consumerName, id.toString());
+          currentCheckpoint, allowedStartTime);
+      PartitionReaderStatsExposer clusterMetrics = 
+      		new PartitionReaderStatsExposer(topicName, consumerName, id.toString(), 
+          		consumerNumber);
       addStatsExposer(clusterMetrics);
       PartitionReader reader = new PartitionReader(id,
-          partitionsChkPoints.get(id), fileSystems[i], buffer, rootDirs[i],
+          partitionCheckpointList, fileSystems[i], buffer, rootDirs[i],
           conf, inputFormatClassName, partitionTimestamp,
-          waitTimeForFileCreate, false, dataEncodingType, clusterMetrics);    
+          waitTimeForFileCreate, false, dataEncodingType, clusterMetrics, 
+          partitionMinList);    
       LOG.debug("Created partition " + id);
       readers.put(id, reader);
     }
@@ -94,4 +101,10 @@ public class HadoopConsumer extends AbstractMessagingDatabusConsumer
   Path[] getRootDirs() {
     return rootDirs;
   }
+  
+  @Override
+  protected void createCheckpoint() {
+  	currentCheckpoint = new CheckpointList(partitionMinList); 
+  }
+
 }

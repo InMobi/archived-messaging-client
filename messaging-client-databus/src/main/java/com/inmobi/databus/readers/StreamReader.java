@@ -2,6 +2,7 @@ package com.inmobi.databus.readers;
 
 import java.io.IOException;
 import java.util.Date;
+import java.util.List;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -44,6 +45,26 @@ public abstract class StreamReader<T extends StreamFile> {
     this.noNewFiles = noNewFiles;
     this.fileMap = createFileMap();
   }
+  
+  public  boolean initFromNextCheckPoint() {
+  	initCurrentFile();
+  	currentFile = fileMap.getFirstFile();
+  	Date date = DatabusStreamWaitingReader.getDateFromStreamDir(streamDir, 
+  			currentFile.getPath().getParent());
+  	int currentMinute = date.getMinutes();
+  	PartitionCheckpoint partitioncheckpoint = DatabusStreamWaitingReader.
+  			partitionCheckpointList.getCheckpoints().get(currentMinute);
+  	if (partitioncheckpoint != null) {
+  		currentLineNum = partitioncheckpoint.getLineNum();
+  	}
+  	if (currentFile != null) {
+  		LOG.debug("CurrentFile:" + getCurrentFile() + " currentLineNum:" + 
+  				currentLineNum);
+  		setIterator();
+  	}
+  	return currentFile != null;
+  }
+
 
   public void openStream() throws IOException {
     openCurrentFile(false);
@@ -225,14 +246,14 @@ public abstract class StreamReader<T extends StreamFile> {
 
   protected boolean nextFile() throws IOException {
     if (hasNextFile()) {
-      setNextFile();
-      return true;
+    	FileStatus nextFile = fileMap.getNext();
+    	setNextFile(nextFile);
+    	return true;
     }
     return false;
   }
 
-  protected void setNextFile() throws IOException {
-    FileStatus nextFile = fileMap.getNext();
+  protected void setNextFile(FileStatus nextFile) throws IOException {
     if (nextFile != null) {
       currentFile = nextFile;
       openCurrentFile(true);

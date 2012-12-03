@@ -15,19 +15,14 @@ import com.inmobi.databus.partition.PartitionId;
  * Checkpoint for the segments of databus stream consumer. 
  * 
  */
-public class CheckpointList {
-
+public class CheckpointList implements ConsumerCheckpoint {
+	
   // map of static id to its checkpoint
   private Map<Integer, Checkpoint> chkpoints =
       new TreeMap<Integer, Checkpoint>();
-  private final String superKey;
-  private final CheckpointProvider checkpointProvider;
   private final List<Integer> idList;
 
-  public CheckpointList(List<Integer> idList,
-      CheckpointProvider provider, String superKey) {
-    this.checkpointProvider = provider;
-    this.superKey = superKey;
+  public CheckpointList(List<Integer> idList) {
     this.idList = idList;
   }
 
@@ -39,7 +34,8 @@ public class CheckpointList {
     return chkpoints;
   }
 
-  public void set(PartitionId pid, PartitionCheckpointList pckList) {
+  public void set(PartitionId pid, MessageCheckpoint msgCkp) {
+    PartitionCheckpointList pckList = (PartitionCheckpointList) msgCkp;
     for (Map.Entry<Integer, PartitionCheckpoint> entry : pckList.
         getCheckpoints().entrySet()) {
       Checkpoint cp = chkpoints.get(entry.getKey());
@@ -68,25 +64,38 @@ public class CheckpointList {
     return buf.toString();
   }
 
-  protected String getChkpointKey(int id) {
-    return getChkpointKey(superKey, id);
-  }
-
   public static String getChkpointKey(String superKey, int id) {
     return superKey + "_" + id;
   }
 
-  public void write() throws IOException {
+  public void write(CheckpointProvider checkpointProvider, String superKey)
+  		throws IOException {
     for (Map.Entry<Integer, Checkpoint> entry : chkpoints.entrySet()) {
-      checkpointProvider.checkpoint(getChkpointKey(entry.getKey()),
+      checkpointProvider.checkpoint(getChkpointKey(superKey, entry.getKey()),
           entry.getValue().toBytes());
     }
   }
+  
+  public void preaprePartitionCheckPointList(PartitionId pid, 
+  	PartitionCheckpointList partitionCheckpointList) {
+  	PartitionCheckpoint partitionCheckpoint;
+  	if (!this.getCheckpoints().isEmpty()) {
+  		for (Map.Entry<Integer, Checkpoint> entry : this.getCheckpoints().entrySet()) {
+  			Checkpoint cp = entry.getValue();
+  			if (cp.getPartitionsCheckpoint().containsKey(pid)) {
+  				partitionCheckpoint = cp.getPartitionsCheckpoint().get(pid);  
+  				partitionCheckpointList.set(entry.getKey(), partitionCheckpoint);
+  			}
+  		} 
+  	}
+  }
 
-  public void read() throws IOException {
+
+  public void read(CheckpointProvider checkpointProvider, String superKey)
+  		throws IOException {
     Map<Integer, Checkpoint> thisChkpoint = new TreeMap<Integer, Checkpoint>();
     for (Integer id : idList) {
-      byte[] chkpointData = checkpointProvider.read(getChkpointKey(id));
+      byte[] chkpointData = checkpointProvider.read(getChkpointKey(superKey, id));
       Checkpoint checkpoint;
       if (chkpointData != null) {
         checkpoint = new Checkpoint(chkpointData);
