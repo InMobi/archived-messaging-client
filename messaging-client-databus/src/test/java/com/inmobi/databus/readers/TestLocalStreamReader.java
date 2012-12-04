@@ -1,6 +1,8 @@
 package com.inmobi.databus.readers;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.TreeMap;
 
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -11,6 +13,7 @@ import org.testng.annotations.Test;
 
 import com.inmobi.databus.Cluster;
 import com.inmobi.databus.partition.PartitionId;
+import com.inmobi.databus.partition.PartitionCheckpoint;
 import com.inmobi.messaging.consumer.util.TestUtil;
 
 public class TestLocalStreamReader extends TestAbstractDatabusWaitingReader{
@@ -28,6 +31,11 @@ public class TestLocalStreamReader extends TestAbstractDatabusWaitingReader{
     streamDir = getStreamsDir();
     inputFormatClass = TextInputFormat.class.getCanonicalName();
     encoded = true;
+    partitionMinList = new ArrayList<Integer>();
+    for (int i = 0; i < 60; i++) {
+    	partitionMinList.add(i);
+    }
+    chkPoints = new TreeMap<Integer, PartitionCheckpoint>();
   }
 
   @AfterTest

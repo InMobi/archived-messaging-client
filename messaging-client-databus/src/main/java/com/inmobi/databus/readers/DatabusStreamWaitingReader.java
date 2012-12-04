@@ -110,15 +110,6 @@ public class DatabusStreamWaitingReader
     }
   }
   
-  protected void setNextFile(FileStatus nextFile) throws IOException {
-  	boolean next = true;
-  	if (nextFile != null) {
-  		next = prepareMoveToNext(currentFile, nextFile);
-  		currentFile = nextFile;
-  		openCurrentFile(next);
-  	}
-  }
-  
   public boolean prepareMoveToNext(FileStatus currentFile, FileStatus nextFile) 
   		throws IOException {                              
   	Date date = getDateFromStreamDir(streamDir, currentFile.getPath().getParent());

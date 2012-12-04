@@ -3,12 +3,14 @@ package com.inmobi.databus.readers;
 import java.io.IOException;
 import java.util.Calendar;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.commons.codec.binary.Base64;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.Text;
+import org.mortbay.log.Log;
 import org.testng.Assert;
 import com.inmobi.databus.partition.PartitionCheckpoint;
 import com.inmobi.databus.partition.PartitionCheckpointList;
@@ -34,7 +36,8 @@ public abstract class TestAbstractDatabusWaitingReader {
   protected String inputFormatClass;
   protected boolean encoded;
   public List<Integer> partitionMinList;                                              
-  public PartitionCheckpointList partitionCheckpointList;                                       
+  public PartitionCheckpointList partitionCheckpointList;  
+  Map<Integer, PartitionCheckpoint> chkPoints;
   int consumerNumber;
 
   public void cleanup() throws IOException {
