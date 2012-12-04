@@ -2,6 +2,7 @@ package com.inmobi.databus.readers;
 
 import java.io.IOException;
 import java.util.Calendar;
+import java.util.List;
 
 import org.apache.commons.codec.binary.Base64;
 import org.apache.hadoop.conf.Configuration;
@@ -10,6 +11,7 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.Text;
 import org.testng.Assert;
 import com.inmobi.databus.partition.PartitionCheckpoint;
+import com.inmobi.databus.partition.PartitionCheckpointList;
 import com.inmobi.databus.partition.PartitionId;
 import com.inmobi.messaging.consumer.util.HadoopUtil;
 import com.inmobi.messaging.consumer.util.MessageUtil;
@@ -31,6 +33,9 @@ public abstract class TestAbstractDatabusWaitingReader {
   protected Path streamDir;
   protected String inputFormatClass;
   protected boolean encoded;
+  public List<Integer> partitionMinList;                                              
+  public PartitionCheckpointList partitionCheckpointList;                                       
+  int consumerNumber;
 
   public void cleanup() throws IOException {
   }
@@ -39,11 +44,12 @@ public abstract class TestAbstractDatabusWaitingReader {
 
   public void testInitialize() throws Exception {
     PartitionReaderStatsExposer metrics = new PartitionReaderStatsExposer(
-        testStream, "c1", partitionId.toString());
+        testStream, "c1", partitionId.toString(), consumerNumber);
     // Read from start
     lreader = new DatabusStreamWaitingReader(partitionId,
         fs, streamDir,
-        inputFormatClass, conf, 1000, metrics, false);
+        inputFormatClass, conf, 1000, metrics, false, partitionMinList, 
+        partitionCheckpointList);           
     Calendar cal = Calendar.getInstance();
     cal.setTime(DatabusStreamWaitingReader.getDateFromStreamDir(streamDir,
         finalFiles[0].getParent()));
@@ -125,10 +131,11 @@ public abstract class TestAbstractDatabusWaitingReader {
 
   public void testReadFromStart() throws Exception {
     PartitionReaderStatsExposer metrics = new PartitionReaderStatsExposer(
-        testStream, "c1", partitionId.toString());
+        testStream, "c1", partitionId.toString(), consumerNumber);
     lreader = new DatabusStreamWaitingReader(partitionId,
         fs, getStreamsDir(),
-        inputFormatClass, conf , 1000, metrics, false);
+        inputFormatClass, conf , 1000, metrics, false, partitionMinList, 
+        partitionCheckpointList);              
     lreader.build(DatabusStreamWaitingReader.getDateFromStreamDir(streamDir,
         finalFiles[0].getParent()));
     lreader.initFromStart();
@@ -148,9 +155,10 @@ public abstract class TestAbstractDatabusWaitingReader {
 
   public void testReadFromCheckpoint() throws Exception {
     PartitionReaderStatsExposer metrics = new PartitionReaderStatsExposer(
-        testStream, "c1", partitionId.toString());
+        testStream, "c1", partitionId.toString(), consumerNumber);
     lreader = new DatabusStreamWaitingReader(partitionId,
-        fs, getStreamsDir(), inputFormatClass, conf, 1000, metrics, false);
+        fs, getStreamsDir(), inputFormatClass, conf, 1000, metrics, false, 
+        partitionMinList, partitionCheckpointList);  
     PartitionCheckpoint pcp = new PartitionCheckpoint(
         DatabusStreamWaitingReader.getHadoopStreamFile(
             fs.getFileStatus( finalFiles[1])), 20);
@@ -170,9 +178,10 @@ public abstract class TestAbstractDatabusWaitingReader {
 
   public void testReadFromTimeStamp() throws Exception {
     PartitionReaderStatsExposer metrics = new PartitionReaderStatsExposer(
-        testStream, "c1", partitionId.toString());
+        testStream, "c1", partitionId.toString(), consumerNumber);
     lreader = new DatabusStreamWaitingReader(partitionId,
-        fs, getStreamsDir(), inputFormatClass, conf, 1000, metrics, false);
+        fs, getStreamsDir(), inputFormatClass, conf, 1000, metrics, false, 
+        partitionMinList, partitionCheckpointList);  
     lreader.build(DatabusStreamWaitingReader.getDateFromStreamDir(streamDir,
         finalFiles[1].getParent()));
     lreader.initializeCurrentFile(
@@ -189,5 +198,4 @@ public abstract class TestAbstractDatabusWaitingReader {
     Assert.assertEquals(metrics.getWaitTimeUnitsNewFile(), 0);
     Assert.assertTrue(metrics.getCumulativeNanosForFetchMessage() > 0);
   }
-
 }

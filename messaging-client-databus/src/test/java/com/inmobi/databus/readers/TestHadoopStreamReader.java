@@ -16,6 +16,7 @@ public class TestHadoopStreamReader extends TestAbstractDatabusWaitingReader{
 
   @BeforeTest
   public void setup() throws Exception {
+  	consumerNumber = 1;
     files = new String[] {HadoopUtil.files[1], HadoopUtil.files[3],
         HadoopUtil.files[5]};
     conf = new Configuration();

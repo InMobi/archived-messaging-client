@@ -21,6 +21,7 @@ public class TestMergeStreamReader extends TestAbstractDatabusWaitingReader{
 
   @BeforeTest
   public void setup() throws Exception {
+  	consumerNumber = 1;
     // initialize config
     cluster = TestUtil.setupLocalCluster(this.getClass().getSimpleName(),
         testStream, new PartitionId(clusterName, collectorName), files, null,

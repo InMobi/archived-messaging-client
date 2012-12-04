@@ -19,6 +19,7 @@ public class TestPartitionReaderMergedStream extends TestAbstractClusterReader {
   Cluster cluster;
   @BeforeTest
   public void setup() throws Exception {
+  	consumerNumber = 1;
     // setup cluster
     cluster = TestUtil.setupLocalCluster(this.getClass().getSimpleName(),
         testStream, new PartitionId(clusterName, collectorName), files, null,

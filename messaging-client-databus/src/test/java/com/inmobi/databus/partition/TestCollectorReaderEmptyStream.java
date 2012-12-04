@@ -40,10 +40,12 @@ public class TestCollectorReaderEmptyStream {
   private Path streamsLocalDir;
   private Configuration conf = new Configuration();
   private FileSystem fs;
+  int consumerNumber;
 
   @BeforeTest
   public void setup() throws Exception {
     // setup cluster
+  	consumerNumber = 1;
     cluster = TestUtil.setupLocalCluster(this.getClass().getSimpleName(),
         testStream, partitionId, null, null, 0);
     collectorDir = DatabusUtil.getCollectorStreamDir(
@@ -63,7 +65,7 @@ public class TestCollectorReaderEmptyStream {
   @Test
   public void testInitialize() throws Exception {
     CollectorReaderStatsExposer prMetrics = new CollectorReaderStatsExposer(
-        testStream, "c1", partitionId.toString());
+        testStream, "c1", partitionId.toString(), consumerNumber);
 
     // Read from start time 
     preader = new PartitionReader(partitionId, null, conf, fs,

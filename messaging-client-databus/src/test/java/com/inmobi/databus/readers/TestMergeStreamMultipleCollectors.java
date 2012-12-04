@@ -1,6 +1,7 @@
 package com.inmobi.databus.readers;
 
 import java.io.IOException;
+import java.util.List;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
@@ -12,6 +13,7 @@ import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
 
 import com.inmobi.databus.Cluster;
+import com.inmobi.databus.partition.PartitionCheckpointList;
 import com.inmobi.databus.partition.PartitionId;
 import com.inmobi.messaging.consumer.util.TestUtil;
 import com.inmobi.messaging.metrics.PartitionReaderStatsExposer;
@@ -31,9 +33,13 @@ public class TestMergeStreamMultipleCollectors {
   Path[] databusFiles2 = new Path[3];
   Configuration conf;
   boolean encoded = true;
-
+  List<Integer> partitionMinList;                                                     
+  PartitionCheckpointList pckList;
+  int conusmerNumber;
+  
   @BeforeTest
   public void setup() throws Exception {
+  	conusmerNumber = 1;
     // initialize config
     cluster = TestUtil.setupLocalCluster(this.getClass().getSimpleName(),
         testStream, new PartitionId(clusterName, collectors[0]), files, null,
@@ -51,12 +57,12 @@ public class TestMergeStreamMultipleCollectors {
   @Test
   public void testReadFromStart() throws Exception {
     PartitionReaderStatsExposer metrics = new PartitionReaderStatsExposer(
-        testStream, "c1", partitionId.toString());
+        testStream, "c1", partitionId.toString(), conusmerNumber);
     reader = new DatabusStreamWaitingReader(partitionId,
         FileSystem.get(cluster.getHadoopConf()),
         DatabusStreamReader.getStreamsDir(cluster, testStream),
         TextInputFormat.class.getCanonicalName(),
-        conf, 1000, metrics, false);
+        conf, 1000, metrics, false, partitionMinList, pckList);                             //
     reader.build(CollectorStreamReader.getDateFromCollectorFile(files[0]));
     reader.initFromStart();
     Assert.assertNotNull(reader.getCurrentFile());

@@ -71,7 +71,7 @@ public abstract class TestAbstractHadoopConsumer {
         rootDirs[0].toString());
     ConsumerUtil.testMarkAndResetWithStartTime(config, testStream, consumerName,
         DatabusStreamWaitingReader.getDateFromStreamDir(
-            rootDirs[0], finalPaths[0][1]), true);
+            rootDirs[0], finalPaths[0][1]), true);                                 //[][1]
   }
 
   public void testSuffixDirs() throws Exception {

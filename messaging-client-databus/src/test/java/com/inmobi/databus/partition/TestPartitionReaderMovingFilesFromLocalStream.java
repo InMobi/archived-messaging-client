@@ -44,10 +44,12 @@ public class TestPartitionReaderMovingFilesFromLocalStream {
       TestUtil.files[5], TestUtil.files[6], TestUtil.files[7],
       TestUtil.files[8]};
   private Path[] databusFiles = new Path[8];
+  int consumerNumber;
 
   @BeforeTest
   public void setup() throws Exception {
     // setup cluster
+  	consumerNumber = 1;
     cluster = TestUtil.setupLocalCluster(this.getClass().getSimpleName(),
         testStream, partitionId, files, null, databusFiles, 4);
     collectorDir = DatabusUtil.getCollectorStreamDir(
@@ -66,7 +68,7 @@ public class TestPartitionReaderMovingFilesFromLocalStream {
   @Test
   public void testLocalStreamFileMoved() throws Exception {
     CollectorReaderStatsExposer prMetrics = new CollectorReaderStatsExposer(
-        testStream, "c1", partitionId.toString());
+        testStream, "c1", partitionId.toString(), consumerNumber);
     preader = new PartitionReader(partitionId, null, conf, fs,
         collectorDir, streamsLocalDir, buffer,
         testStream, CollectorStreamReader.getDateFromCollectorFile(files[0]),

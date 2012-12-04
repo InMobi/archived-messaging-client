@@ -46,10 +46,11 @@ public class TestPartitionReaderCollectorStream {
   private Path streamsLocalDir;
   private Configuration conf = new Configuration();
   private FileSystem fs;
-
+  int consumerNUmber;
 
   @BeforeTest
   public void setup() throws Exception {
+  	consumerNUmber = 1;
     // setup cluster
     cluster = TestUtil.setupLocalCluster(this.getClass().getSimpleName(),
         testStream, partitionId, files, null, 0);
@@ -69,7 +70,7 @@ public class TestPartitionReaderCollectorStream {
   @Test
   public void testInitialize() throws Exception {
     CollectorReaderStatsExposer prMetrics = new CollectorReaderStatsExposer(
-        testStream, "c1", partitionId.toString());
+        testStream, "c1", partitionId.toString(), consumerNUmber);
     // Read from start
     preader = new PartitionReader(partitionId, null, conf, fs,
         collectorDir, streamsLocalDir,
@@ -290,7 +291,7 @@ public class TestPartitionReaderCollectorStream {
   @Test
   public void testReadFromStart() throws Exception {
     CollectorReaderStatsExposer prMetrics = new CollectorReaderStatsExposer(
-        testStream, "c1", partitionId.toString());
+        testStream, "c1", partitionId.toString(), consumerNUmber);
     preader = new PartitionReader(partitionId, null, conf, fs,
         collectorDir, streamsLocalDir, buffer, testStream,
         CollectorStreamReader.getDateFromCollectorFile(files[0]), 1000, 1000,
@@ -329,7 +330,7 @@ public class TestPartitionReaderCollectorStream {
   @Test
   public void testReadFromCheckpoint() throws Exception {
     CollectorReaderStatsExposer prMetrics = new CollectorReaderStatsExposer(
-        testStream, "c1", partitionId.toString());
+        testStream, "c1", partitionId.toString(), consumerNUmber);
     preader = new PartitionReader(partitionId, new PartitionCheckpoint(
         CollectorStreamReader.getCollectorFile(files[1]), 20), conf, fs,
         collectorDir, streamsLocalDir, buffer, testStream, null,
@@ -366,7 +367,7 @@ public class TestPartitionReaderCollectorStream {
   @Test
   public void testReadFromCheckpointWhichDoesNotExist() throws Exception {
     CollectorReaderStatsExposer prMetrics = new CollectorReaderStatsExposer(
-        testStream, "c1", partitionId.toString());
+        testStream, "c1", partitionId.toString(), consumerNUmber);
     preader = new PartitionReader(partitionId, new PartitionCheckpoint(
         CollectorStreamReader.getCollectorFile(doesNotExist1), 20), conf,
         fs, collectorDir, streamsLocalDir, buffer, testStream,
@@ -405,7 +406,7 @@ public class TestPartitionReaderCollectorStream {
   @Test
   public void testReadFromCheckpointWhichDoesNotExist2() throws Exception {
     CollectorReaderStatsExposer prMetrics = new CollectorReaderStatsExposer(
-        testStream, "c1", partitionId.toString());
+        testStream, "c1", partitionId.toString(), consumerNUmber);
     Throwable th = null;
     try {
       preader = new PartitionReader(partitionId, new PartitionCheckpoint(
@@ -423,7 +424,7 @@ public class TestPartitionReaderCollectorStream {
   @Test
   public void testReadFromCheckpointWhichDoesNotExist3() throws Exception {
     CollectorReaderStatsExposer prMetrics = new CollectorReaderStatsExposer(
-        testStream, "c1", partitionId.toString());
+        testStream, "c1", partitionId.toString(), consumerNUmber);
     Throwable th = null;
     try {
       preader = new PartitionReader(partitionId, new PartitionCheckpoint(
@@ -441,7 +442,7 @@ public class TestPartitionReaderCollectorStream {
   @Test
   public void testReadFromStartTime() throws Exception {
     CollectorReaderStatsExposer prMetrics = new CollectorReaderStatsExposer(
-        testStream, "c1", partitionId.toString());
+        testStream, "c1", partitionId.toString(), consumerNUmber);
     preader = new PartitionReader(partitionId, new PartitionCheckpoint(
         CollectorStreamReader.getCollectorFile(files[1]), 20), conf, fs,
         collectorDir, streamsLocalDir, buffer, testStream,
@@ -479,7 +480,7 @@ public class TestPartitionReaderCollectorStream {
   @Test
   public void testReadFromStartTimeWithinStream() throws Exception {
     CollectorReaderStatsExposer prMetrics = new CollectorReaderStatsExposer(
-        testStream, "c1", partitionId.toString());
+        testStream, "c1", partitionId.toString(), consumerNUmber);
     preader = new PartitionReader(partitionId, new PartitionCheckpoint(
         CollectorStreamReader.getCollectorFile(files[1]), 20), conf, fs,
         collectorDir, streamsLocalDir, buffer, testStream,
@@ -517,7 +518,7 @@ public class TestPartitionReaderCollectorStream {
   @Test
   public void testReadFromStartTimeBeforeStream() throws Exception {
     CollectorReaderStatsExposer prMetrics = new CollectorReaderStatsExposer(
-        testStream, "c1", partitionId.toString());
+        testStream, "c1", partitionId.toString(), consumerNUmber);
     preader = new PartitionReader(partitionId, new PartitionCheckpoint(
         CollectorStreamReader.getCollectorFile(files[1]), 20), conf, fs,
         collectorDir, streamsLocalDir, buffer, testStream,
@@ -557,7 +558,7 @@ public class TestPartitionReaderCollectorStream {
   @Test
   public void testReadFromStartTimeAfterStream() throws Exception {
     CollectorReaderStatsExposer prMetrics = new CollectorReaderStatsExposer(
-        testStream, "c1", partitionId.toString());
+        testStream, "c1", partitionId.toString(), consumerNUmber);
     preader = new PartitionReader(partitionId, new PartitionCheckpoint(
         CollectorStreamReader.getCollectorFile(files[1]), 20), conf, fs,
         collectorDir, streamsLocalDir, buffer, testStream,
