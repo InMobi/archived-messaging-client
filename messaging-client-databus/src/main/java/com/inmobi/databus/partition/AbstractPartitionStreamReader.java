@@ -32,7 +32,9 @@ public abstract class AbstractPartitionStreamReader implements
   @Override
   public void close() throws IOException {
     closed = true;
-    reader.close();
+    if (reader != null) {
+      reader.close();
+    }
   }
 
   @Override
