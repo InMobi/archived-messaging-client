@@ -3,6 +3,7 @@ package com.inmobi.messaging.publisher;
 import java.io.IOException;
 import java.net.URL;
 import java.nio.ByteBuffer;
+import java.util.concurrent.CountDownLatch;
 
 import org.testng.Assert;
 import org.testng.annotations.Test;
@@ -124,4 +125,56 @@ public class TestPublisher {
         TopicStatsExposer.TOPIC_CONTEXT_NAME), topic);
   }
   
+  @Test
+  public void testMultiplePublisherThreads() throws IOException,
+      InterruptedException {
+    ClientConfig conf = new ClientConfig();
+    conf.set(MessagePublisherFactory.PUBLISHER_CLASS_NAME_KEY,
+        MockPublisher.class.getName());
+    AbstractMessagePublisher publisher =
+        (AbstractMessagePublisher) MessagePublisherFactory.create(conf);
+    String topic = "test";
+    CountDownLatch startLatch = new CountDownLatch(10);
+    Assert.assertNull(publisher.getStats(topic));
+    PublishThread p1 = new PublishThread(startLatch, topic, publisher);
+    PublishThread p2 = new PublishThread(startLatch, topic, publisher);    
+    p1.start();
+    p2.start();
+    p1.join();
+    p2.join();
+    Assert.assertEquals(publisher.getStats(topic).getInvocationCount(),
+        2, "invocation count");
+    Assert.assertEquals(publisher.getStats(topic).getSuccessCount(),
+        2, "success count");
+    Assert.assertEquals(publisher.getStats(topic).getUnhandledExceptionCount(),
+        0, "unhandledexception count"); 
+    Assert.assertEquals(publisher.getStatsExposer(topic).getContexts().get(
+        TopicStatsExposer.STATS_TYPE_CONTEXT_NAME),
+        TopicStatsExposer.STATS_TYPE);
+    Assert.assertEquals(publisher.getStatsExposer(topic).getContexts().get(
+        TopicStatsExposer.TOPIC_CONTEXT_NAME), topic);
+    Assert.assertFalse(publisher.getMetrics().statEmissionEnabled());
+    Assert.assertNull((publisher.getMetrics().getStatsEmitter()));
+    publisher.close();    
+  }
+
+  class PublishThread extends Thread {
+      
+    private String topic;
+    private AbstractMessagePublisher publisher;
+    private final CountDownLatch startLatch;
+    
+    PublishThread(CountDownLatch startLatch, String topic,
+        AbstractMessagePublisher publisher) {
+      this.startLatch= startLatch;
+      this.topic = topic;
+      this.publisher = publisher;
+    }
+      
+    public void run(){
+      Message msg = new Message( ByteBuffer.wrap(new byte[5]));
+      publisher.publish(topic, msg);
+      Assert.assertEquals(MockPublisher.getMsg(topic), msg);
+    }
+  }
 }
