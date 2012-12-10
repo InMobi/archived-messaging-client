@@ -72,6 +72,10 @@ public class DatabusConsumer extends AbstractMessagingDatabusConsumer
   private static String clusterNamePrefix = "databusCluster";
 
   protected void initializeConfig(ClientConfig config) throws IOException {
+  	String type = config.getString(databusStreamType, DEFAULT_STREAM_TYPE);
+    streamType = StreamType.valueOf(type);
+    
+   
     super.initializeConfig(config);
     waitTimeForFlush = config.getLong(waitTimeForFlushConfig,
         DEFAULT_WAIT_TIME_FOR_FLUSH);
@@ -89,9 +93,6 @@ public class DatabusConsumer extends AbstractMessagingDatabusConsumer
     for (int i = 0; i < rootDirSplits.length; i++) {
       rootDirs[i] = new Path(rootDirSplits[i]);
     }
-    String type = config.getString(databusStreamType, DEFAULT_STREAM_TYPE);
-    streamType = StreamType.valueOf(type);
-    
     if (streamType.equals(StreamType.MERGED)) {
       if (rootDirs.length > 1) {
         throw new IllegalArgumentException("Multiple directories are not" +
@@ -142,7 +143,7 @@ public class DatabusConsumer extends AbstractMessagingDatabusConsumer
             partitionsChkPoints.put(id, null);
           }
           Date partitionTimestamp = getPartitionTimestamp(id,
-          		currentCheckpoint, allowedStartTime);
+          		partitionsChkPoints.get(id), allowedStartTime);
           LOG.debug("Creating partition " + id);
           PartitionReaderStatsExposer collectorMetrics = new 
               CollectorReaderStatsExposer(topicName, consumerName,
@@ -166,7 +167,7 @@ public class DatabusConsumer extends AbstractMessagingDatabusConsumer
         ((CheckpointList)currentCheckpoint).preaprePartitionCheckPointList(id, 
         		partitionCheckpointList);
         Date partitionTimestamp = getPartitionTimestamp(id,
-            currentCheckpoint, allowedStartTime);
+            partitionCheckpointList, allowedStartTime);
         LOG.debug("Creating partition " + id);
         PartitionReaderStatsExposer clusterMetrics = 
             new PartitionReaderStatsExposer(topicName, consumerName,
@@ -176,7 +177,7 @@ public class DatabusConsumer extends AbstractMessagingDatabusConsumer
             partitionCheckpointList, fs, buffer, streamDir, conf,
             TextInputFormat.class.getCanonicalName(), partitionTimestamp,
             waitTimeForFileCreate, true, dataEncodingType, clusterMetrics, 
-            partitionMinList));              
+            partitionMinList));
       }
     }
   }

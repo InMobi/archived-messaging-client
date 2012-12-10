@@ -1,9 +1,9 @@
 package com.inmobi.databus.partition;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.TreeSet;
 
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -36,7 +36,7 @@ public class TestPartitionReaderWaitingLocalStream
     fs = FileSystem.get(conf);
     streamDir = DatabusUtil.getStreamDir(StreamType.LOCAL,
         new Path(cluster.getRootDir()), testStream);
-    partitionMinList = new ArrayList<Integer>();
+    partitionMinList = new TreeSet<Integer>();
     for (int i =0; i< 60; i++) {
     	partitionMinList.add(i);
     }

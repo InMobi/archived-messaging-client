@@ -1,9 +1,9 @@
 package com.inmobi.databus.partition;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.TreeSet;
 
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -29,7 +29,7 @@ public class TestPartitionReaderHadoopStream extends TestAbstractClusterReader {
     HadoopUtil.setupHadoopCluster(conf, files, null, databusFiles, streamDir);
     inputFormatClass = SequenceFileInputFormat.class.getName();
     dataEncoding = DataEncodingType.NONE;
-    partitionMinList = new ArrayList<Integer>();
+    partitionMinList = new TreeSet<Integer>();
     for (int i =0; i < 60; i++) {
     	partitionMinList.add(i);
     }
@@ -57,11 +57,11 @@ public class TestPartitionReaderHadoopStream extends TestAbstractClusterReader {
   public void testReadFromCheckpoint() throws Exception {
     super.testReadFromCheckpoint();
   }
-  /*
+  
   @Test
   public void testReadFromCheckpointWhichDoesNotExist() throws Exception {
     super.testReadFromCheckpointWhichDoesNotExist();
-  } */
+  } 
    
   @Test
   public void testReadFromStartTime() throws Exception {

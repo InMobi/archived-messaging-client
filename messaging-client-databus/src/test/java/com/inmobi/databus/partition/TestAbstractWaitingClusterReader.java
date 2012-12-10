@@ -1,7 +1,7 @@
 package com.inmobi.databus.partition;
 
 import java.io.IOException;
-import java.util.List;
+import java.util.Set;
 import java.util.concurrent.LinkedBlockingQueue;
 
 import org.apache.hadoop.conf.Configuration;
@@ -27,7 +27,7 @@ public abstract class TestAbstractWaitingClusterReader {
       new LinkedBlockingQueue<QueueEntry>(150);
   protected Cluster cluster;
   protected PartitionReader preader;
-  List<Integer>  partitionMinList;                                                     
+  Set<Integer>  partitionMinList;                                                     
   PartitionCheckpointList partitionCheckpointlist;                                                      
 
   

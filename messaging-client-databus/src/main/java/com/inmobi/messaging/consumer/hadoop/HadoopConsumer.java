@@ -79,7 +79,7 @@ public class HadoopConsumer extends AbstractMessagingDatabusConsumer
       Date allowedStartTime = new Date(currentMillis - 
           (retentionInHours * ONE_HOUR_IN_MILLIS));
       Date partitionTimestamp = getPartitionTimestamp(id,
-          currentCheckpoint, allowedStartTime);
+          partitionCheckpointList, allowedStartTime);
       PartitionReaderStatsExposer clusterMetrics = 
       		new PartitionReaderStatsExposer(topicName, consumerName, id.toString(), 
           		consumerNumber);

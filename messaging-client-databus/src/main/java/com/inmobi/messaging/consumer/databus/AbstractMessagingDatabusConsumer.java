@@ -2,11 +2,11 @@ package com.inmobi.messaging.consumer.databus;
 
 import java.io.IOException;
 import java.lang.reflect.Constructor;
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
@@ -15,6 +15,8 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.security.UserGroupInformation;
 
 import com.inmobi.databus.CheckpointProvider;
+import com.inmobi.databus.partition.PartitionCheckpoint;
+import com.inmobi.databus.partition.PartitionCheckpointList;
 import com.inmobi.databus.partition.PartitionId;
 import com.inmobi.databus.partition.PartitionReader;
 import com.inmobi.databus.utils.SecureLoginUtil;
@@ -44,7 +46,7 @@ public abstract class AbstractMessagingDatabusConsumer
   protected int retentionInHours;
   protected int consumerNumber;
   protected int totalConsumers;
-  public List<Integer> partitionMinList;
+  public Set<Integer> partitionMinList;
   @Override
   protected void init(ClientConfig config) throws IOException {
     initializeConfig(config);
@@ -88,7 +90,7 @@ public abstract class AbstractMessagingDatabusConsumer
     try {
       consumerNumber = Integer.parseInt(id[0]);
       totalConsumers = Integer.parseInt(id[1]);
-      partitionMinList = new ArrayList<Integer>();
+      partitionMinList = new TreeSet<Integer>();
       if (consumerNumber > 0 && totalConsumers > 0) {
       	for (int i = 0; i < 60; i++) {
       		if ((i % totalConsumers) == (consumerNumber - 1)) {
@@ -136,7 +138,7 @@ public abstract class AbstractMessagingDatabusConsumer
 
   protected abstract void createCheckpoint();
 
-  public List<Integer> getPartitionMinList() {
+  public Set<Integer> getPartitionMinList() {
   	return partitionMinList;
   }
 
@@ -148,7 +150,8 @@ public abstract class AbstractMessagingDatabusConsumer
   protected Message getNext() throws InterruptedException {
     QueueEntry entry;
     entry = buffer.take();
-    currentCheckpoint.set(entry.getPartitionId(), entry.getMessageChkpoint());
+    MessageCheckpoint msgchk = entry.getMessageChkpoint();
+    currentCheckpoint.set(entry.getPartitionId(), msgchk);
     return entry.getMessage();
   }
 
@@ -161,7 +164,7 @@ public abstract class AbstractMessagingDatabusConsumer
 
   protected abstract void createPartitionReaders() throws IOException;
 
-  protected Date getPartitionTimestamp(PartitionId id, ConsumerCheckpoint pck,
+  protected Date getPartitionTimestamp(PartitionId id, PartitionCheckpoint pck,
       Date allowedStartTime) {
     Date partitionTimestamp = startTime;
     if (startTime == null && pck == null) {
@@ -177,9 +180,42 @@ public abstract class AbstractMessagingDatabusConsumer
       LOG.info("Creating partition with timestamp: " + partitionTimestamp
           + " checkpoint:" + pck);
     }
-
     return partitionTimestamp;
   }
+  
+  protected Date getPartitionTimestamp(PartitionId id, PartitionCheckpointList pck,
+    	Date allowedStartTime) {
+  	boolean checkpointFlag = isPartitionCheckpointListNUll(pck);
+  	Date partitionTimestamp = startTime;
+  	if (startTime == null && !checkpointFlag) {
+  		LOG.info("There is no startTime passed and no checkpoint exists" +
+  				" for the partition: " + id + " starting from the start" +
+  				" of the stream.");
+  		partitionTimestamp = allowedStartTime;
+  	} else if (startTime != null && startTime.before(allowedStartTime)) {
+  		LOG.info("Start time passed is before the start of the stream," +
+  				" starting from the start of the stream.");
+  		partitionTimestamp = allowedStartTime;
+  	} else {
+  		LOG.info("Creating partition with timestamp: " + partitionTimestamp
+  				+ " checkpoint:" + pck);
+  	}
+
+  	return partitionTimestamp;
+  }
+
+  public boolean isPartitionCheckpointListNUll(PartitionCheckpointList 
+  		partitionCheckpointList) {
+  	Map<Integer, PartitionCheckpoint>listOfPartitionCheckpoints = 
+  			partitionCheckpointList.getCheckpoints();
+  	for (Integer minuteId : partitionMinList) {
+  		if ( listOfPartitionCheckpoints.get(minuteId)!= null) {
+  			return true;
+  		}
+  	}
+  	return false;
+  }
+  
 
   protected String getChkpointKey() {
     return consumerName + "_" + topicName;

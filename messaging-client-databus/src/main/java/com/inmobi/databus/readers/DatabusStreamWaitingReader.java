@@ -1,12 +1,11 @@
 package com.inmobi.databus.readers;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
-import java.util.List;
-import java.util.TreeMap;
 import java.util.Map;
+import java.util.Set;
+import java.util.TreeMap;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -18,7 +17,6 @@ import org.apache.hadoop.fs.PathFilter;
 
 import com.inmobi.databus.files.FileMap;
 import com.inmobi.databus.files.HadoopStreamFile;
-import com.inmobi.databus.files.StreamFile;
 import com.inmobi.databus.partition.PartitionCheckpoint;
 import com.inmobi.databus.partition.PartitionCheckpointList;
 import com.inmobi.databus.partition.PartitionId;
@@ -30,14 +28,14 @@ public class DatabusStreamWaitingReader
   private static final Log LOG = LogFactory.getLog(
       DatabusStreamWaitingReader.class);
 
-  public int currentMin;
-  public List<Integer> partitionMinList;
-  public static PartitionCheckpointList partitionCheckpointList;
+	public int currentMin;
+  public Set<Integer> partitionMinList;
+  public PartitionCheckpointList partitionCheckpointList;
 
   public DatabusStreamWaitingReader(PartitionId partitionId, FileSystem fs,
       Path streamDir,  String inputFormatClass, Configuration conf,
       long waitTimeForFileCreate, PartitionReaderStatsExposer metrics,
-      boolean noNewFiles, List<Integer> partitionMinList, 
+      boolean noNewFiles, Set<Integer> partitionMinList, 
       PartitionCheckpointList partitionCheckpointList)
           throws IOException {
     super(partitionId, fs, streamDir, inputFormatClass, conf,
@@ -62,9 +60,42 @@ public class DatabusStreamWaitingReader
   	}
   	return false;
   }
+  
+  public PartitionCheckpointList getPartitionCheckpointList() {
+  	TreeMap<Integer, PartitionCheckpoint> chckMp = new TreeMap<Integer,
+  			PartitionCheckpoint>();
+  	Map<Integer, PartitionCheckpoint> orginalMap = partitionCheckpointList.
+  			getCheckpoints();
+  	for(Map.Entry<Integer, PartitionCheckpoint> entry: orginalMap.entrySet()) {
+  		chckMp.put(entry.getKey(), new PartitionCheckpoint(entry.getValue().
+  				getStreamFile(), entry.getValue().getLineNum()));
+  	}
+  	return new PartitionCheckpointList(chckMp);
+  }
+  
+  
+  @Override
+  public boolean initFromNextCheckPoint() {
+  	initCurrentFile();
+  	currentFile = getFirstFileInStream();
+  	Date date = DatabusStreamWaitingReader.getDateFromStreamDir(streamDir, 
+  			currentFile.getPath().getParent());
+  	int currentMinute = date.getMinutes();
+  	PartitionCheckpoint partitioncheckpoint = partitionCheckpointList.
+  			getCheckpoints().get(currentMinute);
+  	if (partitioncheckpoint != null) {
+  		currentLineNum = partitioncheckpoint.getLineNum();
+  	}
+  	if (currentFile != null) {
+  		LOG.debug("CurrentFile:" + getCurrentFile() + " currentLineNum:" + 
+  				currentLineNum);
+  		setIterator();
+  	}
+  	return currentFile != null;
 
+  }
 
-  protected void buildListing(FileMap<HadoopStreamFile> fmap,
+	protected void buildListing(FileMap<HadoopStreamFile> fmap,
       PathFilter pathFilter)
       throws IOException {
     Calendar current = Calendar.getInstance();
@@ -123,18 +154,20 @@ public class DatabusStreamWaitingReader
   	if (currentMin != now.get(Calendar.MINUTE)) {
   		partitionCheckpointList.set(currentMin, 
   				new PartitionCheckpoint(getCurrentStreamFile(), -1));
-  				currentMin = now.get(Calendar.MINUTE);
-  				PartitionCheckpoint pck = partitionCheckpointList.getCheckpoints().
-  						get(currentMin);
-  				if (pck != null && pck.getLineNum() != -1) {                                               
-  					currentFile = nextFile;                                                                          
-  					if((pck.getStreamFile()).compareTo(getStreamFile(currentFile)) != 0) {
-  						currentFile = fs.getFileStatus(new Path(pck.getFileName()));
-  						setIteratorToFile(currentFile);                                                                     
-  					}
-  					currentLineNum = pck.getLineNum();
-  					return false;
-  				}
+  		currentMin = now.get(Calendar.MINUTE);
+  		PartitionCheckpoint pck = partitionCheckpointList.getCheckpoints().
+  				get(currentMin);
+  		if (pck != null && pck.getLineNum() != -1) {                                               
+  			currentFile = nextFile;      
+  			//set iterator to checkpoointed file if there is a checkpoint
+  			if((pck.getStreamFile()).compareTo(getStreamFile(currentFile)) != 0) {
+  				currentFile = fs.getFileStatus(new Path(pck.getFileName()));
+  				setIteratorToFile(currentFile);                                                                     
+  			}
+  			currentLineNum = pck.getLineNum();
+  			nextFile = currentFile;
+  			return false;
+  		}
   	} 
   	return true;
   }  
@@ -200,8 +233,10 @@ public class DatabusStreamWaitingReader
       }
       line = readNextLine();
     }
-    partitionCheckpointList.set(currentMin, new PartitionCheckpoint(                              
-    		getCurrentStreamFile(), getCurrentLineNum())); 
+    if (partitionMinList.contains(currentMin)) {
+    	partitionCheckpointList.set(currentMin, new PartitionCheckpoint(                              
+    			getCurrentStreamFile(), getCurrentLineNum())); 
+    }
     return line;
   }
 

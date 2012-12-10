@@ -1,7 +1,6 @@
 package com.inmobi.databus.partition;
 
 import java.io.IOException;
-import java.sql.PreparedStatement;
 import java.util.concurrent.LinkedBlockingQueue;
 
 import org.apache.hadoop.conf.Configuration;

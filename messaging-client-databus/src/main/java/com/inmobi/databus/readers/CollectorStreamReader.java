@@ -18,7 +18,6 @@ import com.inmobi.databus.Cluster;
 import com.inmobi.databus.files.CollectorFile;
 import com.inmobi.databus.files.DatabusStreamFile;
 import com.inmobi.databus.files.FileMap;
-import com.inmobi.databus.files.StreamFile;
 import com.inmobi.databus.partition.PartitionId;
 import com.inmobi.messaging.metrics.CollectorReaderStatsExposer;
 

@@ -2,9 +2,11 @@ package com.inmobi.messaging.consumer.databus;
 
 import java.io.IOException;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
+
+import org.mortbay.log.Log;
 
 import com.inmobi.databus.CheckpointProvider;
 import com.inmobi.databus.partition.PartitionCheckpoint;
@@ -20,9 +22,9 @@ public class CheckpointList implements ConsumerCheckpoint {
   // map of static id to its checkpoint
   private Map<Integer, Checkpoint> chkpoints =
       new TreeMap<Integer, Checkpoint>();
-  private final List<Integer> idList;
+  private final Set<Integer> idList;
 
-  public CheckpointList(List<Integer> idList) {
+  public CheckpointList(Set<Integer> idList) {
     this.idList = idList;
   }
 
@@ -45,6 +47,7 @@ public class CheckpointList implements ConsumerCheckpoint {
         cp = new Checkpoint(partitionsChkPoints);
       }
       cp.set(pid, entry.getValue());
+      chkpoints.put(entry.getKey(), cp);
     }
   }
 
@@ -90,7 +93,6 @@ public class CheckpointList implements ConsumerCheckpoint {
   	}
   }
 
-
   public void read(CheckpointProvider checkpointProvider, String superKey)
   		throws IOException {
     Map<Integer, Checkpoint> thisChkpoint = new TreeMap<Integer, Checkpoint>();
@@ -104,6 +106,7 @@ public class CheckpointList implements ConsumerCheckpoint {
             new HashMap<PartitionId, PartitionCheckpoint>();
         checkpoint = new Checkpoint(partitionsChkPoints);
       }
+      Log.info("id" + id + "checkpoint" + checkpoint);
       thisChkpoint.put(id, checkpoint);
     }
     setCheckpoint(thisChkpoint);

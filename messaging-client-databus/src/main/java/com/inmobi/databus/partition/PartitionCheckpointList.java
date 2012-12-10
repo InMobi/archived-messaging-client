@@ -17,6 +17,7 @@ public class PartitionCheckpointList implements MessageCheckpoint {
       new TreeMap<Integer, PartitionCheckpoint>();
 
   public PartitionCheckpointList(Map<Integer, PartitionCheckpoint> chkpoints) {
+  
     this.pChkpoints = chkpoints;
   }
 

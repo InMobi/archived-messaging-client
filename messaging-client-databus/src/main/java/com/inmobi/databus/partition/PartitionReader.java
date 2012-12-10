@@ -3,7 +3,7 @@ package com.inmobi.databus.partition;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Date;
-import java.util.List;
+import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 
 import org.apache.commons.codec.binary.Base64;
@@ -54,7 +54,7 @@ public class PartitionReader {
       Configuration conf, String inputFormatClass,
       Date startTime, long waitTimeForFileCreate, boolean isDatabusData,
       DataEncodingType dataEncoding, PartitionReaderStatsExposer prMetrics,
-      List<Integer> partitionMinList)
+      Set<Integer> partitionMinList)
           throws IOException {
     this(partitionId, partitionCheckpointList, fs, buffer, streamDir,
         conf, inputFormatClass, startTime, waitTimeForFileCreate, isDatabusData,
@@ -81,7 +81,7 @@ public class PartitionReader {
     LOG.info("Partition reader initialized with partitionId:" + partitionId +
         " checkPoint:" + partitionCheckpoint +  
         " startTime:" + startTime +
-        " currentReader:" + reader);
+        " currentReader:" + reader + "noNewFiles" + noNewFiles);
   }
 
   PartitionReader(PartitionId partitionId,
@@ -90,7 +90,7 @@ public class PartitionReader {
       Configuration conf, String inputFormatClass,
       Date startTime, long waitTimeForFileCreate, boolean isDatabusData,
       DataEncodingType dataEncoding, PartitionReaderStatsExposer prMetrics,
-      boolean noNewFiles, List<Integer> partitionMinList)
+      boolean noNewFiles, Set<Integer> partitionMinList)
           throws IOException {
     this(partitionId, partitionCheckpointList, buffer, startTime, dataEncoding,
         prMetrics, partitionMinList);
@@ -102,7 +102,7 @@ public class PartitionReader {
     LOG.info("Partition reader initialized with partitionId:" + partitionId +
         " checkPoint:" + partitionCheckpointList +  
         " startTime:" + startTime +
-        " currentReader:" + reader);
+        " currentReader:" + reader + "noNewFiles" + noNewFiles);
   }
 
   private PartitionReader(PartitionId partitionId,
@@ -127,7 +127,7 @@ public class PartitionReader {
       PartitionCheckpointList partitionCheckpointList,
       BlockingQueue<QueueEntry> buffer, Date startTime,
       DataEncodingType dataEncoding,
-      PartitionReaderStatsExposer prMetrics, List<Integer> partitionMinList)
+      PartitionReaderStatsExposer prMetrics, Set<Integer> partitionMinList)
           throws IOException {
   	if (startTime == null && partitionCheckpointList == null) {
   		String msg = "StartTime and checkpoint both" +

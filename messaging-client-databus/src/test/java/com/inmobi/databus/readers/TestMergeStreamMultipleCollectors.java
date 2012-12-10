@@ -1,7 +1,10 @@
 package com.inmobi.databus.readers;
 
 import java.io.IOException;
-import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeMap;
+import java.util.TreeSet;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
@@ -13,6 +16,7 @@ import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
 
 import com.inmobi.databus.Cluster;
+import com.inmobi.databus.partition.PartitionCheckpoint;
 import com.inmobi.databus.partition.PartitionCheckpointList;
 import com.inmobi.databus.partition.PartitionId;
 import com.inmobi.messaging.consumer.util.TestUtil;
@@ -33,8 +37,9 @@ public class TestMergeStreamMultipleCollectors {
   Path[] databusFiles2 = new Path[3];
   Configuration conf;
   boolean encoded = true;
-  List<Integer> partitionMinList;                                                     
-  PartitionCheckpointList pckList;
+  Set<Integer> partitionMinList;                                                     
+  PartitionCheckpointList partitionCheckpointList;
+  Map<Integer, PartitionCheckpoint> chkPoints;
   int conusmerNumber;
   
   @BeforeTest
@@ -47,6 +52,12 @@ public class TestMergeStreamMultipleCollectors {
     TestUtil.setUpFiles(cluster, collectors[1], files, null, databusFiles2, 0,
         3);
     conf = cluster.getHadoopConf();
+    partitionMinList = new TreeSet<Integer>();
+    for (int i = 0; i < 60; i++) {
+    	partitionMinList.add(i);
+    }
+    chkPoints = new TreeMap<Integer, PartitionCheckpoint>();
+    partitionCheckpointList = new PartitionCheckpointList(chkPoints);
   }
 
   @AfterTest
@@ -62,7 +73,7 @@ public class TestMergeStreamMultipleCollectors {
         FileSystem.get(cluster.getHadoopConf()),
         DatabusStreamReader.getStreamsDir(cluster, testStream),
         TextInputFormat.class.getCanonicalName(),
-        conf, 1000, metrics, false, partitionMinList, pckList);                             //
+        conf, 1000, metrics, false, partitionMinList, partitionCheckpointList);                             
     reader.build(CollectorStreamReader.getDateFromCollectorFile(files[0]));
     reader.initFromStart();
     Assert.assertNotNull(reader.getCurrentFile());

@@ -227,7 +227,7 @@ public class TestUtil {
     fs.delete(new Path(cluster.getLocalFinalDestDirRoot()), true);
     fs.delete(new Path(cluster.getFinalDestDirRoot()), true);
     fs.mkdirs(collectorDir);
-    
+    LOG.debug("ready to set up files");
     setUpFiles(cluster, pid.getCollector(), collectorFiles, emptyFiles,
         databusFiles, numFilesToMoveToStreamLocal, numFilesToMoveToStreams);
 

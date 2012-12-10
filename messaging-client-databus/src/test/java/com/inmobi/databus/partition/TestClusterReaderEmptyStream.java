@@ -2,9 +2,10 @@ package com.inmobi.databus.partition;
 
 import java.io.IOException;
 import java.util.Date;
-import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.concurrent.LinkedBlockingQueue;
 
 import org.apache.hadoop.conf.Configuration;
@@ -38,7 +39,7 @@ public class TestClusterReaderEmptyStream {
   private PartitionReader preader;
   private static final String clusterName = "testCluster";
   private PartitionId clusterId = new PartitionId(clusterName, null);
-  List<Integer> partitionMinList;                                                   
+  Set<Integer> partitionMinList;                                                   
   PartitionCheckpointList partitionCheckpointList;       
   Map<Integer, PartitionCheckpoint> chkPoints;
   
@@ -57,6 +58,7 @@ public class TestClusterReaderEmptyStream {
          testStream).makeQualified(fs);
     HadoopUtil.setupHadoopCluster(conf, null, null, null, streamDir);
     inputFormatClass = SequenceFileInputFormat.class.getName();
+    partitionMinList = new TreeSet<Integer>();
     for (int i = 0; i < 60; i++) {
     	partitionMinList.add(i);
     }
@@ -88,15 +90,10 @@ public class TestClusterReaderEmptyStream {
         DatabusStreamWaitingReader.class.getName());
 
     //Read from checkpoint
-   /* preader = new PartitionReader(clusterId, new PartitionCheckpoint(
-        new HadoopStreamFile(DatabusStreamWaitingReader.getMinuteDirPath(streamDir,
-            CollectorStreamReader.getDateFromCollectorFile(TestUtil.files[0])),
-            "dummyfile", 0L), 20), fs, buffer,
-        streamDir, conf, inputFormatClass, null, 
-        1000, false, DataEncodingType.BASE64, prMetrics, true, partitionMinList);  *///
-   /* prepareCheckpointList( new HadoopStreamFile(DatabusStreamWaitingReader.getMinuteDirPath(streamDir,
-        CollectorStreamReader.getDateFromCollectorFile(TestUtil.files[0])),
-        "dummyfile", 0L), 20, );*/
+    prepareCheckpointList(new HadoopStreamFile(DatabusStreamWaitingReader.
+    		getMinuteDirPath(streamDir, CollectorStreamReader.
+    				getDateFromCollectorFile(TestUtil.files[0])),
+    				"dummyfile", 0L), 20, partitionCheckpointList);
     preader = new PartitionReader(clusterId, partitionCheckpointList, fs, buffer,
         streamDir, conf, inputFormatClass, null, 
         1000, false, DataEncodingType.BASE64, prMetrics, true, partitionMinList);
@@ -108,15 +105,11 @@ public class TestClusterReaderEmptyStream {
         .getReader()).getReader().getClass().getName(),
         DatabusStreamWaitingReader.class.getName());
 
-    //Read from startTime with checkpoint
-   /* preader = new PartitionReader(clusterId, new PartitionCheckpoint(
-        new HadoopStreamFile(DatabusStreamWaitingReader.getMinuteDirPath(streamDir,
-            CollectorStreamReader.getDateFromCollectorFile(TestUtil.files[0])),
-            "dummyfile", 0L), 20), fs, buffer,
-        streamDir, conf, inputFormatClass,
-        CollectorStreamReader.getDateFromCollectorFile(TestUtil.files[0]), 
-        1000,
-        false, DataEncodingType.BASE64, prMetrics, true, partitionMinList);  */      
+    //Read from startTime with checkpoint    
+    prepareCheckpointList(new HadoopStreamFile(DatabusStreamWaitingReader.
+    		getMinuteDirPath(streamDir, CollectorStreamReader.
+    				getDateFromCollectorFile(TestUtil.files[0])),
+    				"dummyfile", 0L), 20, partitionCheckpointList);
     preader = new PartitionReader(clusterId, partitionCheckpointList, fs, buffer,
         streamDir, conf, inputFormatClass,
         CollectorStreamReader.getDateFromCollectorFile(TestUtil.files[0]), 
@@ -133,6 +126,7 @@ public class TestClusterReaderEmptyStream {
   
   public void prepareCheckpointList(StreamFile streamFile, int lineNum, 
 		  PartitionCheckpointList partitionCheckpointList) {
+  	partitionCheckpointList = new PartitionCheckpointList(chkPoints);
   	Date date = DatabusStreamWaitingReader.getDateFromStreamDir(streamDir, 
   			new Path(streamFile.toString()));
   	partitionCheckpointList.set(date.getMinutes(), new PartitionCheckpoint(

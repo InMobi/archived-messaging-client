@@ -1,12 +1,12 @@
 package com.inmobi.databus.partition;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
-import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.concurrent.LinkedBlockingQueue;
 
 import org.apache.hadoop.conf.Configuration;
@@ -33,7 +33,7 @@ public abstract class TestAbstractClusterReader {
   protected LinkedBlockingQueue<QueueEntry> buffer = 
       new LinkedBlockingQueue<QueueEntry>(1000);
   protected PartitionReader preader;
-  public List<Integer> partitionMinList;                                             
+  public Set<Integer> partitionMinList;                                             
   PartitionCheckpointList partitionCheckpointList;                                                      
   Map<Integer, PartitionCheckpoint> pchkPoints;                                        
   int consumerNumber;
@@ -295,7 +295,7 @@ public abstract class TestAbstractClusterReader {
     PartitionReaderStatsExposer prMetrics = new PartitionReaderStatsExposer(
         testStream, "c1", partitionId.toString(), consumerNumber);
     prepareCheckpoint(HadoopUtil.getOlderFile(streamDir, fs, databusFiles[0]), 
-    		20, databusFiles[1], partitionCheckpointList);
+    		20, databusFiles[0], partitionCheckpointList);
 
     preader = new PartitionReader(partitionId, partitionCheckpointList, fs, buffer,
         streamDir, conf, inputFormatClass, null, 1000,
@@ -503,7 +503,7 @@ public abstract class TestAbstractClusterReader {
   }
   
   public void testReadFromCheckpointWithSingleMinute() throws Exception {
-  	partitionMinList = new ArrayList<Integer>();
+  	partitionMinList = new TreeSet<Integer>();
   	Map<Integer, PartitionCheckpoint> chkpoints = new 
   			TreeMap<Integer, PartitionCheckpoint>();
   	partitionCheckpointList = new PartitionCheckpointList(chkpoints);
@@ -516,7 +516,6 @@ public abstract class TestAbstractClusterReader {
   		partitionCheckpointList.set(date.getMinutes(), new PartitionCheckpoint(
   				DatabusStreamWaitingReader.getHadoopStreamFile(fs.getFileStatus(
   						databusFiles[i])), 20)); 
-  		Log.info("minute is" + partitionMinList.get(i));
   	}
   	
   	PartitionReaderStatsExposer prMetrics = new PartitionReaderStatsExposer(
@@ -552,7 +551,7 @@ public abstract class TestAbstractClusterReader {
   }
   
   public void testReadFromCheckpointMultipleMinutes() throws Exception {
-  	partitionMinList = new ArrayList<Integer>();
+  	partitionMinList = new TreeSet<Integer>();
   	Map<Integer, PartitionCheckpoint> chkpoints = new 
   			TreeMap<Integer, PartitionCheckpoint>();
   	partitionCheckpointList = new PartitionCheckpointList(chkpoints);
@@ -565,7 +564,6 @@ public abstract class TestAbstractClusterReader {
   		partitionCheckpointList.set(date.getMinutes(), new PartitionCheckpoint(
   				DatabusStreamWaitingReader.getHadoopStreamFile(fs.getFileStatus(
   						databusFiles[i])), 20)); 
-  		Log.info("minute is" + partitionMinList.get(i));
   	}
   	
   	PartitionReaderStatsExposer prMetrics = new PartitionReaderStatsExposer(
@@ -607,7 +605,7 @@ public abstract class TestAbstractClusterReader {
   }
   
   public void testReadFromCheckpointSomeMinutes()  throws Exception {
-  	partitionMinList = new ArrayList<Integer>();
+  	partitionMinList = new TreeSet<Integer>();
   	Map<Integer, PartitionCheckpoint> chkpoints = new 
   			TreeMap<Integer, PartitionCheckpoint>();
   	partitionCheckpointList = new PartitionCheckpointList(chkpoints);
@@ -625,7 +623,6 @@ public abstract class TestAbstractClusterReader {
   					DatabusStreamWaitingReader.getHadoopStreamFile(fs.getFileStatus(
   							databusFiles[i])), 00)); 
   		}
-  		Log.info("minute is" + partitionMinList.get(i));
   	}
 
   	PartitionReaderStatsExposer prMetrics = new PartitionReaderStatsExposer(
@@ -675,7 +672,7 @@ public abstract class TestAbstractClusterReader {
   }
   
   public void initializeMinList() {
-  	partitionMinList = new ArrayList<Integer>();
+  	partitionMinList = new TreeSet<Integer>();
     for (int i =0; i < 60; i++) {
     	partitionMinList.add(i);
     }

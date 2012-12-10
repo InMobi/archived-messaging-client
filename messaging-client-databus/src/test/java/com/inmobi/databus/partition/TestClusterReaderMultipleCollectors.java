@@ -1,11 +1,11 @@
 package com.inmobi.databus.partition;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Date;
-import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.concurrent.LinkedBlockingQueue;
 
 import org.apache.hadoop.conf.Configuration;
@@ -47,7 +47,7 @@ public class TestClusterReaderMultipleCollectors {
   FileSystem fs;
   Path streamDir;
   Configuration conf = new Configuration();
-  List<Integer> partitionMinList;                                                  
+  Set<Integer> partitionMinList;                                                  
   PartitionCheckpointList partitionCheckpointList;    
   int consumerNumber;
 
@@ -67,7 +67,7 @@ public class TestClusterReaderMultipleCollectors {
     Map<Integer, PartitionCheckpoint> chkpoints = new 
     		TreeMap<Integer, PartitionCheckpoint>();
     partitionCheckpointList = new PartitionCheckpointList(chkpoints);
-    partitionMinList = new ArrayList<Integer>();
+    partitionMinList = new TreeSet<Integer>();
     for (int i = 0; i < 60; i++) {
     	partitionMinList.add(i);
     }

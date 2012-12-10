@@ -28,16 +28,16 @@ public class TestHadoopConsumer extends TestAbstractHadoopConsumer {
     Assert.assertEquals(rootDirs.length, 3);
   }
 
-/*  @Test
+  @Test
   public void testMarkAndReset() throws Exception {
     super.testMarkAndReset();
   }
- */
+ 
   @Test
   public void testMarkAndResetWithStartTime() throws Exception {
     super.testMarkAndResetWithStartTime();
   }
-/*
+
   @Test
   public void testMultipleClusters() throws Exception {
     super.testMultipleClusters();
@@ -47,7 +47,7 @@ public class TestHadoopConsumer extends TestAbstractHadoopConsumer {
   public void testMultipleClusters2() throws Exception {
     super.testMultipleClusters2();
   }
- */
+ 
   @AfterTest
   public void cleanup() throws IOException {
     super.cleanup();

@@ -5,9 +5,9 @@ import java.io.DataInputStream;
 import java.io.IOException;
 import java.util.Date;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import java.util.Collection;
+import java.util.Set;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -34,7 +34,7 @@ public class ClusterReader extends AbstractPartitionStreamReader {
       Path streamDir, Configuration conf, String inputFormatClass,
       Date startTime, long waitTimeForFileCreate, boolean isDatabusData,
       PartitionReaderStatsExposer metrics, boolean noNewFiles,
-      List<Integer> partitionMinList)
+      Set<Integer> partitionMinList)
           throws IOException {
     this.startTime = startTime;
     this.streamDir = streamDir;
@@ -54,12 +54,12 @@ public class ClusterReader extends AbstractPartitionStreamReader {
   	PartitionCheckpointList partitionCheckpointList) {
   	PartitionCheckpoint partitioncheckpoint = null;
 
-  	Map<Integer, PartitionCheckpoint> listofPartitionChkpoints = 
+  	Map<Integer, PartitionCheckpoint> listOfCheckpoints = 
   			partitionCheckpointList.getCheckpoints();
 
-  	if (listofPartitionChkpoints != null) {
+  	if (listOfCheckpoints != null) {
   		Collection<PartitionCheckpoint> listofPartitionCheckpoints = 
-  				listofPartitionChkpoints.values();
+  				listOfCheckpoints.values();
   		Iterator<PartitionCheckpoint> it = listofPartitionCheckpoints.iterator();
   		Date timeStamp = null;
   		if (it.hasNext()) {
@@ -128,6 +128,14 @@ public class ClusterReader extends AbstractPartitionStreamReader {
   
   @Override
   public MessageCheckpoint getMessageCheckpoint() {
-  	return (MessageCheckpoint) DatabusStreamWaitingReader.partitionCheckpointList;
+  	if (reader instanceof DatabusStreamWaitingReader) {
+	    DatabusStreamWaitingReader dataWaitingReader = (DatabusStreamWaitingReader) reader;
+	    PartitionCheckpointList pChkLst = new PartitionCheckpointList(
+	    		dataWaitingReader.getPartitionCheckpointList().getCheckpoints());
+	    return pChkLst;
+	    //return dataWaitingReader.getPartitionCheckpointList();
+    } else {
+    	return null;
+    }
   }
 }

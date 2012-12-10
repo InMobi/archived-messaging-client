@@ -1,8 +1,8 @@
 package com.inmobi.databus.readers;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.TreeMap;
+import java.util.TreeSet;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
@@ -31,7 +31,7 @@ public class TestHadoopStreamReader extends TestAbstractDatabusWaitingReader{
     HadoopUtil.setupHadoopCluster(conf, files, null, finalFiles, streamDir);
     inputFormatClass = SequenceFileInputFormat.class.getCanonicalName();
     encoded = false;
-    partitionMinList = new ArrayList<Integer>();
+    partitionMinList = new TreeSet<Integer>();
     for (int i = 0; i < 60; i++) {
     	partitionMinList.add(i);
     }
