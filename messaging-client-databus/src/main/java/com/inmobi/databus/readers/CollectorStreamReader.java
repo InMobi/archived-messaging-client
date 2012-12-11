@@ -198,8 +198,8 @@ public class CollectorStreamReader extends StreamReader<CollectorFile> {
         }
       } else {
         if (moveToNext) {
-          setNextFile();
-          LOG.info("Reading from next file: " + getCurrentFile());
+           setNextFile();
+           LOG.info("Reading from next file: " + getCurrentFile());
         } else {
           LOG.info("Reading from same file before moving to next");
           // open the same file

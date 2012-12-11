@@ -7,8 +7,9 @@ import java.io.IOException;
 import org.apache.hadoop.io.Writable;
 
 import com.inmobi.databus.files.StreamFile;
+import com.inmobi.messaging.consumer.databus.MessageCheckpoint;
 
-public class PartitionCheckpoint implements Writable {
+public class PartitionCheckpoint implements Writable, MessageCheckpoint {
   private StreamFile streamFile;
   private long lineNum;
 

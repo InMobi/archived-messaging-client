@@ -3,6 +3,7 @@ package com.inmobi.databus.partition;
 import java.io.IOException;
 
 import com.inmobi.databus.files.StreamFile;
+import com.inmobi.messaging.consumer.databus.MessageCheckpoint;
 
 public interface PartitionStreamReader {
 
@@ -19,4 +20,6 @@ public interface PartitionStreamReader {
   void closeStream() throws IOException;
   
   void close() throws IOException;
+  
+  MessageCheckpoint getMessageCheckpoint();
 }

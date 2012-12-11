@@ -43,4 +43,12 @@ public interface MessagingConsumerConfig {
 
   public static final String hadoopConfigFileKey =
       "messaging.consumer.hadoop.conf";
+  
+  /**
+   * The consumer id is used in case of groups. The number associated with
+   * consumer in the group, for eg. 2/5
+   */
+  public static final String consumerIdInGroupConfig = 
+      "messaging.consumer.group.membership";
+  public static final String DEFAULT_CONSUMER_ID = "1/1";
 }

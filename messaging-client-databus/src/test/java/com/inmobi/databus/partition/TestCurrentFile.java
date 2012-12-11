@@ -44,6 +44,7 @@ public class TestCurrentFile {
   private String currentScribeFile = TestUtil.files[3];
   Configuration conf = new Configuration();
   private Path streamsLocalDir;
+  int consumerNumber;
 
 
   private void writeMessages(FSDataOutputStream out, int num)
@@ -65,6 +66,7 @@ public class TestCurrentFile {
 
   @BeforeTest
   public void setup() throws Exception {
+  	consumerNumber = 1;
     cluster = TestUtil.setupDFSCluster(this.getClass().getSimpleName(),
         testStream, partitionId,
         MiniClusterUtil.getDFSCluster(conf).getFileSystem().getUri().toString(),
@@ -80,7 +82,7 @@ public class TestCurrentFile {
   @Test
   public void testReadFromCurrentScribeFile() throws Exception {
     CollectorReaderStatsExposer prMetrics = new CollectorReaderStatsExposer(
-        testStream, "c1", partitionId.toString());
+        testStream, "c1", partitionId.toString(), consumerNumber);
     preader = new PartitionReader(partitionId, null, conf, fs,
         collectorDir, streamsLocalDir, buffer, testStream,
         CollectorStreamReader.getDateFromCollectorFile(currentScribeFile), 1000,

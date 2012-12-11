@@ -31,6 +31,7 @@ CLIENT_CONSOLECONSUMER_CLASS="com.inmobi.messaging.consumer.examples.ConsoleClie
 CLIENT_BENCHMARK_CLASS="com.inmobi.messaging.consumer.examples.StreamingBenchmark"
 CLIENT_COUNTER_CLASS="com.inmobi.messaging.consumer.examples.CounterClient"
 CLIENT_MULTITOPIC_SEQGEN_CLASS="com.inmobi.messaging.publisher.examples.MultiTopicSeqGenerator"
+CLIENT_CHECKPOINT_UTIL_CLASS="com.inmobi.messaging.consumer.util.CheckpointUtil"
 
 ################################
 # functions
@@ -71,7 +72,7 @@ Usage: $0 file <topic> <file> --conf <confdir>
           [-consumer <no-of-producers> <no-of-messages> [<timeoutSeconds> <msg-size> <hadoopconsumerflag> <timezone>]] --conf <confdir>
        $0 counter <minutes-to-read-from> --conf <confdir> 
        $0 multitopicseqgen <topic1> <topic2> <maxSeq> --conf <confdir>
-
+       $0 checkpointutil <confFile>
 EOF
 }
 
@@ -129,6 +130,9 @@ case "$mode" in
     ;;
   multitopicseqgen)
     opt_multitopicseqgen=1
+    ;;
+  checkpointutil)
+    opt_checkpointutil=1
     ;;
   *)
     error "Unknown or unspecified command '$mode'"
@@ -211,8 +215,9 @@ elif [ -n "$opt_counter" ] ; then
   run_client $CLIENT_COUNTER_CLASS $args
 elif [ -n "$opt_multitopicseqgen" ] ; then
   run_client $CLIENT_MULTITOPIC_SEQGEN_CLASS $args
+elif [ -n "$opt_checkpointutil" ] ; then
+  run_client $CLIENT_CHECKPOINT_UTIL_CLASS $args
 else
   error "This message should never appear" 1
 fi
-
 exit 0

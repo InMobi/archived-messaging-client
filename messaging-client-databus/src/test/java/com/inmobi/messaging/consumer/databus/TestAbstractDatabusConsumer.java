@@ -30,7 +30,8 @@ public abstract class TestAbstractDatabusConsumer {
   public void setup(int numFileToMove) throws Exception {
 
     ClientConfig config = loadConfig();
-    testConsumer = new DatabusConsumer();
+    testConsumer = getConsumerInstance();
+    //System.out.println(testConsumer.getClass().getCanonicalName());
     testConsumer.initializeConfig(config);
 
     // setup stream, collector dirs and data files
@@ -65,6 +66,10 @@ public abstract class TestAbstractDatabusConsumer {
             numFileToMove, numFileToMove);
       }
     }
+  }
+
+	protected DatabusConsumer getConsumerInstance() {
+	  return new DatabusConsumer();
   }
 
   abstract ClientConfig loadConfig();

@@ -4,7 +4,9 @@ import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
@@ -14,6 +16,7 @@ import org.apache.hadoop.security.UserGroupInformation;
 
 import com.inmobi.databus.CheckpointProvider;
 import com.inmobi.databus.partition.PartitionCheckpoint;
+import com.inmobi.databus.partition.PartitionCheckpointList;
 import com.inmobi.databus.partition.PartitionId;
 import com.inmobi.databus.partition.PartitionReader;
 import com.inmobi.databus.utils.SecureLoginUtil;
@@ -21,7 +24,7 @@ import com.inmobi.instrumentation.AbstractMessagingClientStatsExposer;
 import com.inmobi.messaging.ClientConfig;
 import com.inmobi.messaging.Message;
 import com.inmobi.messaging.consumer.AbstractMessageConsumer;
-import com.inmobi.messaging.consumer.BaseMessageConsumerStatsExposer;
+import com.inmobi.messaging.metrics.DatabusConsumerStatsExposer;
 
 public abstract class AbstractMessagingDatabusConsumer 
     extends AbstractMessageConsumer 
@@ -36,12 +39,14 @@ public abstract class AbstractMessagingDatabusConsumer
       new HashMap<PartitionId, PartitionReader>();
 
   protected CheckpointProvider checkpointProvider;
-  protected Checkpoint currentCheckpoint;
+  protected ConsumerCheckpoint currentCheckpoint;
   protected long waitTimeForFileCreate;
   protected int bufferSize;
   protected DataEncodingType dataEncodingType;
   protected int retentionInHours;
-
+  protected int consumerNumber;
+  protected int totalConsumers;
+  public Set<Integer> partitionMinList;
   @Override
   protected void init(ClientConfig config) throws IOException {
     initializeConfig(config);
@@ -78,6 +83,27 @@ public abstract class AbstractMessagingDatabusConsumer
       }
     }
 
+    // Read consumer id
+    String consumerIdStr = config.getString(consumerIdInGroupConfig,
+        DEFAULT_CONSUMER_ID);
+    String[] id = consumerIdStr.split("/");
+    try {
+      consumerNumber = Integer.parseInt(id[0]);
+      totalConsumers = Integer.parseInt(id[1]);
+      partitionMinList = new HashSet<Integer>();
+      if (consumerNumber > 0 && totalConsumers > 0) {
+      	for (int i = 0; i < 60; i++) {
+      		if ((i % totalConsumers) == (consumerNumber - 1)) {
+      			partitionMinList.add(i);
+      		}
+      	}
+      } else {
+      	LOG.info("Invalid consumer group membership");
+      }
+    } catch (NumberFormatException nfe) {
+      throw new IllegalArgumentException("Invalid consumer group membership",
+          nfe);
+    }
     // Create checkpoint provider and initialize checkpoint
     String chkpointProviderClassName = config.getString(
         chkProviderConfig, DEFAULT_CHK_PROVIDER);
@@ -86,14 +112,8 @@ public abstract class AbstractMessagingDatabusConsumer
     this.checkpointProvider = createCheckpointProvider(
         chkpointProviderClassName, databusCheckpointDir);
 
-    byte[] chkpointData = checkpointProvider.read(getChkpointKey());
-    if (chkpointData != null) {
-      this.currentCheckpoint = new Checkpoint(chkpointData);
-    } else {
-      Map<PartitionId, PartitionCheckpoint> partitionsChkPoints = 
-          new HashMap<PartitionId, PartitionCheckpoint>();
-      this.currentCheckpoint = new Checkpoint(partitionsChkPoints);
-    }
+    createCheckpoint();
+    currentCheckpoint.read(checkpointProvider, getChkpointKey());
 
     //create buffer
     bufferSize = config.getInteger(queueSizeConfig, DEFAULT_QUEUE_SIZE);
@@ -116,15 +136,22 @@ public abstract class AbstractMessagingDatabusConsumer
     return readers;
   }
 
-  public Checkpoint getCurrentCheckpoint() {
-    return currentCheckpoint;
+  protected abstract void createCheckpoint();
+
+  public Set<Integer> getPartitionMinList() {
+  	return partitionMinList;
+  }
+
+  public ConsumerCheckpoint getCurrentCheckpoint() {
+  	return currentCheckpoint;
   }
 
   @Override
   protected Message getNext() throws InterruptedException {
     QueueEntry entry;
     entry = buffer.take();
-    currentCheckpoint.set(entry.getPartitionId(), entry.getPartitionChkpoint());
+    MessageCheckpoint msgchk = entry.getMessageChkpoint();
+    currentCheckpoint.set(entry.getPartitionId(), msgchk);
     return entry.getMessage();
   }
 
@@ -153,9 +180,42 @@ public abstract class AbstractMessagingDatabusConsumer
       LOG.info("Creating partition with timestamp: " + partitionTimestamp
           + " checkpoint:" + pck);
     }
-
     return partitionTimestamp;
   }
+  
+  protected Date getPartitionTimestamp(PartitionId id, PartitionCheckpointList pck,
+    	Date allowedStartTime) {
+  	boolean checkpointFlag = isPartitionCheckpointListNUll(pck);
+  	Date partitionTimestamp = startTime;
+  	if (startTime == null && !checkpointFlag) {
+  		LOG.info("There is no startTime passed and no checkpoint exists" +
+  				" for the partition: " + id + " starting from the start" +
+  				" of the stream.");
+  		partitionTimestamp = allowedStartTime;
+  	} else if (startTime != null && startTime.before(allowedStartTime)) {
+  		LOG.info("Start time passed is before the start of the stream," +
+  				" starting from the start of the stream.");
+  		partitionTimestamp = allowedStartTime;
+  	} else {
+  		LOG.info("Creating partition with timestamp: " + partitionTimestamp
+  				+ " checkpoint:" + pck);
+  	}
+
+  	return partitionTimestamp;
+  }
+
+  public boolean isPartitionCheckpointListNUll(PartitionCheckpointList 
+  		partitionCheckpointList) {
+  	Map<Integer, PartitionCheckpoint>listOfPartitionCheckpoints = 
+  			partitionCheckpointList.getCheckpoints();
+  	for (Integer minuteId : partitionMinList) {
+  		if ( listOfPartitionCheckpoints.get(minuteId)!= null) {
+  			return true;
+  		}
+  	}
+  	return false;
+  }
+  
 
   protected String getChkpointKey() {
     return consumerName + "_" + topicName;
@@ -166,8 +226,7 @@ public abstract class AbstractMessagingDatabusConsumer
     // restart the service, consumer will start streaming from the last saved
     // checkpoint
     close();
-    this.currentCheckpoint = new Checkpoint(
-        checkpointProvider.read(getChkpointKey()));
+    currentCheckpoint.read(checkpointProvider, getChkpointKey());
     LOG.info("Resetting to checkpoint:" + currentCheckpoint);
     // reset to last marked position, ignore start time
     startTime = null;
@@ -177,8 +236,7 @@ public abstract class AbstractMessagingDatabusConsumer
 
   @Override
   protected void doMark() throws IOException {
-    checkpointProvider.checkpoint(getChkpointKey(),
-        currentCheckpoint.toBytes());
+  	currentCheckpoint.write(checkpointProvider, getChkpointKey());
     LOG.info("Committed checkpoint:" + currentCheckpoint);
   }
 
@@ -200,6 +258,7 @@ public abstract class AbstractMessagingDatabusConsumer
 
   @Override
   protected AbstractMessagingClientStatsExposer getMetricsImpl() {
-    return new BaseMessageConsumerStatsExposer(topicName, consumerName);
+    return new DatabusConsumerStatsExposer(topicName, consumerName,
+        consumerNumber);
   }
 }

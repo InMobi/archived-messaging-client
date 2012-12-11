@@ -34,10 +34,12 @@ public class TestLocalStreamCollectorReader {
   private String doesNotExist2 = TestUtil.files[2];
   private String doesNotExist3 = TestUtil.files[7];
   Configuration conf;
+  int consumerNumber;
 
   @BeforeTest
   public void setup() throws Exception {
     // initialize config
+  	consumerNumber = 1;
     cluster = TestUtil.setupLocalCluster(this.getClass().getSimpleName(),
         testStream, partitionId, files, null, databusFiles, 3);
     conf = cluster.getHadoopConf();
@@ -51,7 +53,8 @@ public class TestLocalStreamCollectorReader {
   @Test
   public void testInitialize() throws Exception {
     CollectorReaderStatsExposer metrics = new 
-        CollectorReaderStatsExposer(testStream, "c1", partitionId.toString());
+        CollectorReaderStatsExposer(testStream, "c1", partitionId.toString(),
+        		consumerNumber);
     // Read from start
     lreader = new LocalStreamCollectorReader(partitionId,
         FileSystem.get(cluster.getHadoopConf()), testStream,
@@ -131,7 +134,8 @@ public class TestLocalStreamCollectorReader {
   @Test
   public void testReadFromStart() throws Exception {
     CollectorReaderStatsExposer metrics = new 
-        CollectorReaderStatsExposer(testStream, "c1", partitionId.toString());
+        CollectorReaderStatsExposer(testStream, "c1", partitionId.toString(), 
+        		consumerNumber);
     lreader = new LocalStreamCollectorReader(partitionId,
         FileSystem.get(cluster.getHadoopConf()), testStream,
         DatabusStreamReader.getStreamsLocalDir(cluster, testStream), conf,
@@ -154,7 +158,8 @@ public class TestLocalStreamCollectorReader {
   @Test
   public void testReadFromCheckpoint() throws Exception {
     CollectorReaderStatsExposer metrics = new 
-        CollectorReaderStatsExposer(testStream, "c1", partitionId.toString());
+        CollectorReaderStatsExposer(testStream, "c1", partitionId.toString(), 
+        		consumerNumber);
     lreader = new LocalStreamCollectorReader(partitionId,
         FileSystem.get(cluster.getHadoopConf()), testStream,
         DatabusStreamReader.getStreamsLocalDir(cluster, testStream), conf, 0L,
@@ -179,7 +184,8 @@ public class TestLocalStreamCollectorReader {
   @Test
   public void testReadFromTimeStamp() throws Exception {
     CollectorReaderStatsExposer metrics = new 
-        CollectorReaderStatsExposer(testStream, "c1", partitionId.toString());
+        CollectorReaderStatsExposer(testStream, "c1", partitionId.toString(), 
+        		consumerNumber);
     lreader = new LocalStreamCollectorReader(partitionId,
         FileSystem.get(cluster.getHadoopConf()), testStream,
         DatabusStreamReader.getStreamsLocalDir(cluster, testStream), conf, 0L,

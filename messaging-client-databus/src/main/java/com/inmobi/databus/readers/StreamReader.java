@@ -44,6 +44,16 @@ public abstract class StreamReader<T extends StreamFile> {
     this.noNewFiles = noNewFiles;
     this.fileMap = createFileMap();
   }
+  
+  public boolean initFromNextCheckPoint() throws IOException {
+  	//The method is overridden in the DatabusStreamWaitingReader
+  	return true;
+  }
+  
+  public boolean prepareMoveToNext(FileStatus currentFile, FileStatus nextFile)
+  		throws IOException {
+  	return true;
+  }
 
   public void openStream() throws IOException {
     openCurrentFile(false);
@@ -225,17 +235,18 @@ public abstract class StreamReader<T extends StreamFile> {
 
   protected boolean nextFile() throws IOException {
     if (hasNextFile()) {
-      setNextFile();
-      return true;
+    	setNextFile();
+    	return true;
     }
     return false;
   }
 
   protected void setNextFile() throws IOException {
-    FileStatus nextFile = fileMap.getNext();
+  	FileStatus nextFile = fileMap.getNext();
     if (nextFile != null) {
+    	boolean next = prepareMoveToNext(currentFile, nextFile);
       currentFile = nextFile;
-      openCurrentFile(true);
+      openCurrentFile(next);
     }
   }
 
@@ -327,5 +338,9 @@ public abstract class StreamReader<T extends StreamFile> {
   
   protected boolean isWithinStream(String fileName) throws IOException {
     return fileMap.isWithin(fileName);
+  }
+  
+  protected FileStatus getFirstFileInStream() {
+  	return fileMap.getFirstFile();
   }
 }

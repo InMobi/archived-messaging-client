@@ -98,6 +98,14 @@ public abstract class FileMap<T extends StreamFile> {
     return null;
   }
 
+  public FileStatus getLastFile() {
+    Map.Entry<T, FileStatus> last = files.lastEntry();
+    if (last != null) {
+      return last.getValue();
+    }
+    return null;
+  }
+
   private Map.Entry<T, FileStatus> getFirstEntry() {
     return files.firstEntry();
   }
@@ -156,5 +164,4 @@ public abstract class FileMap<T extends StreamFile> {
   public boolean hasNext() {
     return fileNameIterator.hasNext();
   }
-
 }

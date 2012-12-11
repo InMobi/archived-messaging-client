@@ -32,7 +32,7 @@ public class TestHadoopConsumer extends TestAbstractHadoopConsumer {
   public void testMarkAndReset() throws Exception {
     super.testMarkAndReset();
   }
-
+ 
   @Test
   public void testMarkAndResetWithStartTime() throws Exception {
     super.testMarkAndResetWithStartTime();
@@ -47,7 +47,7 @@ public class TestHadoopConsumer extends TestAbstractHadoopConsumer {
   public void testMultipleClusters2() throws Exception {
     super.testMultipleClusters2();
   }
-
+ 
   @AfterTest
   public void cleanup() throws IOException {
     super.cleanup();

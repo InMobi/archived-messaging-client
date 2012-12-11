@@ -3,10 +3,8 @@ package com.inmobi.messaging.metrics;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 
-import com.inmobi.messaging.consumer.AbstractMessageConsumerStatsExposer;
-
 public class PartitionReaderStatsExposer extends 
-    AbstractMessageConsumerStatsExposer {
+    DatabusConsumerStatsExposer {
   public final static String MESSAGES_READ_FROM_SOURCE = 
       "messagesReadFromSource";
   public final static String MESSAGES_ADDED_TO_BUFFER = "messagesAddedToBuffer";
@@ -24,8 +22,8 @@ public class PartitionReaderStatsExposer extends
   private final String pid;
 
   public PartitionReaderStatsExposer(String topicName, String consumerName,
-      String pid) {
-    super(topicName, consumerName);
+      String pid, int consumerNumber) {
+    super(topicName, consumerName, consumerNumber);
     this.pid = pid;
   }
 

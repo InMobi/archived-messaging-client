@@ -1,6 +1,7 @@
 package com.inmobi.databus.partition;
 
 import java.io.IOException;
+import java.util.Set;
 import java.util.concurrent.LinkedBlockingQueue;
 
 import org.apache.hadoop.conf.Configuration;
@@ -26,7 +27,10 @@ public abstract class TestAbstractWaitingClusterReader {
       new LinkedBlockingQueue<QueueEntry>(150);
   protected Cluster cluster;
   protected PartitionReader preader;
+  Set<Integer>  partitionMinList;                                                     
+  PartitionCheckpointList partitionCheckpointlist;                                                      
 
+  
   protected String[] files = new String[] {TestUtil.files[1], TestUtil.files[3],
       TestUtil.files[5]};
   protected String[] newFiles = new String[] {TestUtil.files[6], TestUtil.files[7],
@@ -39,6 +43,7 @@ public abstract class TestAbstractWaitingClusterReader {
   DataEncodingType dataEncoding;
   Path streamDir;
   Configuration conf;
+  int consumerNumber;
 
   abstract void setupFiles(String[] files, Path[] newDatabusFiles) throws
       Exception;
@@ -50,12 +55,12 @@ public abstract class TestAbstractWaitingClusterReader {
 
   public void testReadFromStart() throws Exception {
     PartitionReaderStatsExposer prMetrics = new PartitionReaderStatsExposer(
-        testStream, "c1", partitionId.toString());
-    preader = new PartitionReader(partitionId, null, fs, buffer,
-        streamDir, conf, inputFormatClass,
+        testStream, "c1", partitionId.toString(), consumerNumber);
+    preader = new PartitionReader(partitionId, partitionCheckpointlist, fs, 
+    		buffer, streamDir, conf, inputFormatClass,
         DatabusStreamWaitingReader.getDateFromStreamDir(streamDir,
             databusFiles[0]),
-        1000, isDatabusData(), dataEncoding, prMetrics, false);
+        1000, isDatabusData(), dataEncoding, prMetrics, false, partitionMinList);     
 
     preader.init();
     Assert.assertTrue(buffer.isEmpty());
