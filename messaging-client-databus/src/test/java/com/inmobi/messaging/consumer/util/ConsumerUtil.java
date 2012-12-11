@@ -50,7 +50,6 @@ public class ConsumerUtil {
       }
     }
     consumer.mark();
-    
     ConsumerCheckpoint temp = consumer.getCurrentCheckpoint();
     Checkpoint lastCheckpoint = null;
     //
@@ -85,9 +84,9 @@ public class ConsumerUtil {
     for (int i= 0; i < numCounters; i++) {
       Assert.assertEquals(counter[i], numDataFiles * numMessagesPerFile);
     }
-
-    consumer.reset();
     
+    consumer.reset();
+   
     for (int i = 0; i < totalMessages/2; i++) {
     	Message msg = consumer.next();
       String msgStr = getMessage(msg.getData().array(), hadoop);
@@ -98,7 +97,7 @@ public class ConsumerUtil {
         }
       }
     }
-   
+    
     for (int i= 0; i < numCounters; i++) {
       Assert.assertEquals(markedcounter1[i], numDataFiles * numMessagesPerFile);
     }
@@ -238,9 +237,12 @@ public class ConsumerUtil {
     // test checkpoint and consumer crash
     consumer = createConsumer(hadoop);
     consumer.init(streamName, consumerName, null, config);
-    Assert.assertEquals(((CheckpointList)consumer.getCurrentCheckpoint()).
-    		getCheckpoints(), checkpointMap);
-
+    if(temp instanceof CheckpointList) {
+    	Assert.assertEquals(((CheckpointList)consumer.getCurrentCheckpoint()).
+    			getCheckpoints(), checkpointMap);
+    } else {
+    	Assert.assertEquals(consumer.getCurrentCheckpoint(), lastCheckpoint);
+    }
     for (i = 240; i < 300; i++) {
       Message msg = consumer.next();
       Assert.assertEquals(getMessage(msg.getData().array(), hadoop),
@@ -327,9 +329,12 @@ public class ConsumerUtil {
     // test checkpoint and consumer crash
     consumer = createConsumer(hadoop);
     consumer.init(streamName, consumerName, null, config);
-    Assert.assertEquals(((CheckpointList)consumer.getCurrentCheckpoint()).
-    		getCheckpoints(), checkpointMap);
-
+    if(temp instanceof CheckpointList) {
+    	Assert.assertEquals(((CheckpointList)consumer.getCurrentCheckpoint()).
+    			getCheckpoints(), checkpointMap);
+    } else {
+    	Assert.assertEquals(consumer.getCurrentCheckpoint(), lastCheckpoint);
+    }
     for (i = 140; i < 300; i++) {
       Message msg = consumer.next();
       Assert.assertEquals(getMessage(msg.getData().array(), hadoop),

@@ -45,15 +45,15 @@ public class DatabusStreamWaitingReader
   }
   
   public boolean isRead(Date currentTimeStamp, int minute) {
-  	PartitionCheckpoint pck = null;
+  	PartitionCheckpoint partitionCheckpoint = null;
   	if (partitionCheckpointList != null && (partitionCheckpointList.
   			getCheckpoints() != null)) {
-  		pck = partitionCheckpointList.getCheckpoints().get(minute);
-  		if (pck != null) {
+  		partitionCheckpoint = partitionCheckpointList.getCheckpoints().get(minute);
+  		if (partitionCheckpoint != null) {
   			Date checkpointedTimestamp = getDateFromStreamDir(streamDir, 
-  					new Path(pck.getFileName()));
+  					new Path(partitionCheckpoint.getFileName()));
   			if ((currentTimeStamp.compareTo(checkpointedTimestamp) < 0) || 
-  					(pck.getLineNum() == -1)) {  
+  					(partitionCheckpoint.getLineNum() == -1)) {  
   				return true;
   			} 
   		}
@@ -75,7 +75,7 @@ public class DatabusStreamWaitingReader
   
   
   @Override
-  public boolean initFromNextCheckPoint() {
+  public boolean initFromNextCheckPoint() throws IOException {
   	initCurrentFile();
   	currentFile = getFirstFileInStream();
   	Date date = DatabusStreamWaitingReader.getDateFromStreamDir(streamDir, 
@@ -84,6 +84,11 @@ public class DatabusStreamWaitingReader
   	PartitionCheckpoint partitioncheckpoint = partitionCheckpointList.
   			getCheckpoints().get(currentMinute);
   	if (partitioncheckpoint != null) {
+  		if (currentFile.getPath().getName().compareTo(
+    			partitioncheckpoint.getFileName()) != 0) {
+    		currentFile = fs.getFileStatus(new Path(partitioncheckpoint.getFileName()));
+    		setIteratorToFile(currentFile);
+    	}
   		currentLineNum = partitioncheckpoint.getLineNum();
   	}
   	if (currentFile != null) {
@@ -155,16 +160,18 @@ public class DatabusStreamWaitingReader
   		partitionCheckpointList.set(currentMin, 
   				new PartitionCheckpoint(getCurrentStreamFile(), -1));
   		currentMin = now.get(Calendar.MINUTE);
-  		PartitionCheckpoint pck = partitionCheckpointList.getCheckpoints().
-  				get(currentMin);
-  		if (pck != null && pck.getLineNum() != -1) {                                               
+  		PartitionCheckpoint partitionCheckpoint = partitionCheckpointList.
+  				getCheckpoints().get(currentMin);
+  		if (partitionCheckpoint != null && partitionCheckpoint.getLineNum() != -1) {                                               
   			currentFile = nextFile;      
   			//set iterator to checkpoointed file if there is a checkpoint
-  			if((pck.getStreamFile()).compareTo(getStreamFile(currentFile)) != 0) {
-  				currentFile = fs.getFileStatus(new Path(pck.getFileName()));
+  			if((partitionCheckpoint.getStreamFile()).compareTo(
+  					getStreamFile(currentFile)) != 0) {
+  				currentFile = fs.getFileStatus(new Path(partitionCheckpoint.
+  						getFileName()));
   				setIteratorToFile(currentFile);                                                                     
   			}
-  			currentLineNum = pck.getLineNum();
+  			currentLineNum = partitionCheckpoint.getLineNum();
   			nextFile = currentFile;
   			return false;
   		}

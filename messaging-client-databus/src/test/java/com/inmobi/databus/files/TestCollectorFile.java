@@ -11,7 +11,7 @@ public class TestCollectorFile {
 
   @Test
   public void testCollectorFile() throws ParseException {
-    Calendar now = Calendar.getInstance();
+  	Calendar now = Calendar.getInstance();
     String stream1 = "a";
     String stream2 = "b";
     Date date = now.getTime();
@@ -69,6 +69,5 @@ public class TestCollectorFile {
     }
     Assert.assertNotNull(th);
     Assert.assertTrue(th instanceof IllegalArgumentException);
-
   }
 }

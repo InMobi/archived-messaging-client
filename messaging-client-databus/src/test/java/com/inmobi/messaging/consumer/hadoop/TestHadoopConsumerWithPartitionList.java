@@ -29,8 +29,8 @@ public class TestHadoopConsumerWithPartitionList  {
 			TestHadoopConsumerWithPartitionList.class);
 	HadoopConsumer consumer;
 	HadoopConsumer secondConsumer;
-	String firstConfFile = "messaging-consumer-hadoop-conf5.properties";
-	String secondConfFile = "messaging-consumer-hadoop-conf6.properties";
+	String firstConfFile = "messaging-consumer-hadoop-conf11.properties";
+	String secondConfFile = "messaging-consumer-hadoop-conf12.properties";
 	String streamName = "testStream";
 	int numMessagesPerFile = 100;
   int numDataFiles;

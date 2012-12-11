@@ -664,7 +664,6 @@ public abstract class TestAbstractClusterReader {
   
   public void prepareCheckpoint(StreamFile streamFile, int lineNum, 
   		Path databusFile, PartitionCheckpointList partitionCheckpointList) {
-  	
   	Date date = DatabusStreamWaitingReader.getDateFromStreamDir(streamDir, 
 				databusFile.getParent());
   	partitionCheckpointList.set(date.getMinutes(), new PartitionCheckpoint(

@@ -61,15 +61,12 @@ public class CheckpointUtil implements DatabusConsumerConfig {
         oldCheckpoint.getPartitionsCheckpoint();
     for (Map.Entry<PartitionId, PartitionCheckpoint> entry : 
       partitionCheckpoints.entrySet()) {
-    	System.out.println("pck " + entry.getValue());
     	Path tmpPathFile = new Path(entry.getValue().getStreamFile().toString()).
     			getParent();
     	//to get streamDir path  form streamDirPath/YYYY/MM/DD/HH/MN)
     	for (int i = 0; i < 5; i++) {
     		tmpPathFile = tmpPathFile.getParent();
     	}
-    	System.out.println("streamdir " + streamDir + "  tmpPathFile "+ tmpPathFile);
-    	streamDir = streamDir.getParent().getParent();
     	if ((streamDir).compareTo(tmpPathFile) == 0) {
     		Map<Integer, PartitionCheckpoint> thisChkpoint =
     				new TreeMap<Integer, PartitionCheckpoint>();

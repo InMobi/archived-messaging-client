@@ -4,9 +4,9 @@ import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.TreeSet;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
@@ -90,7 +90,7 @@ public abstract class AbstractMessagingDatabusConsumer
     try {
       consumerNumber = Integer.parseInt(id[0]);
       totalConsumers = Integer.parseInt(id[1]);
-      partitionMinList = new TreeSet<Integer>();
+      partitionMinList = new HashSet<Integer>();
       if (consumerNumber > 0 && totalConsumers > 0) {
       	for (int i = 0; i < 60; i++) {
       		if ((i % totalConsumers) == (consumerNumber - 1)) {

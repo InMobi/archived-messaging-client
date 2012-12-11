@@ -73,7 +73,7 @@ public class TestDatabusConsumerMultipleCollectors
     assertMessages(config, 1, 2);
   }
 
- // @Test
+  @Test
   public void testLocalStreamMultipleClusters() throws Exception {
     ClientConfig config = loadConfig();
     config.set(DatabusConsumerConfig.databusRootDirsConfig,
@@ -85,7 +85,7 @@ public class TestDatabusConsumerMultipleCollectors
     assertMessages(config, 2, 2);
   }
 
-  //@Test
+  @Test
   public void testLocalStreamAllClusters() throws Exception {
     ClientConfig config = loadConfig();
     config.set(DatabusConsumerConfig.databusRootDirsConfig,

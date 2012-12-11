@@ -133,7 +133,6 @@ public class ClusterReader extends AbstractPartitionStreamReader {
 	    PartitionCheckpointList pChkLst = new PartitionCheckpointList(
 	    		dataWaitingReader.getPartitionCheckpointList().getCheckpoints());
 	    return pChkLst;
-	    //return dataWaitingReader.getPartitionCheckpointList();
     } else {
     	return null;
     }

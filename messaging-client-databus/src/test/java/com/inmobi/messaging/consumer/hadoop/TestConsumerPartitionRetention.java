@@ -7,6 +7,7 @@ import java.util.List;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 
 import org.testng.Assert;
@@ -25,8 +26,8 @@ public class TestConsumerPartitionRetention {
 			TestConsumerPartitionRetention.class);
 	HadoopConsumer consumer;
 	HadoopConsumer secondConsumer;
-	String firstConfFile = "messaging-consumer-hadoop-conf5.properties";
-	String secondConfFile = "messaging-consumer-hadoop-conf6.properties";
+	String firstConfFile = "messaging-consumer-hadoop-conf7.properties";
+	String secondConfFile = "messaging-consumer-hadoop-conf8.properties";
 	String streamName = "testStream";
 	List<String> firstConsumedMessages;
 	List<String> secondConsumedMessages;
@@ -42,9 +43,6 @@ public class TestConsumerPartitionRetention {
   protected Path[] rootDirs;
   Path [][] finalPaths;
   Configuration conf;
-  Thread thread1;
-  Thread thread2;
-  
 	
   @BeforeTest
 	public void setup() throws Exception {
@@ -73,8 +71,8 @@ public class TestConsumerPartitionRetention {
     }
     HadoopUtil.setUpHadoopFiles(rootDirs[0], conf, 
         new String[] {"_SUCCESS", "_DONE"}, suffixDirs, null);
-		
-  }
+	}
+  
   @Test
 	public void testWithRetentionPeriod() throws Exception {
  
@@ -95,6 +93,7 @@ public class TestConsumerPartitionRetention {
 		  Message msg = consumer.next();
 		  firstConsumedMessages.add(getMessage(msg.getData().array()));
 	  }
+		consumer.close();
     LOG.info("number of msgs consumed by first consumer" + 
     		firstConsumedMessages.size());
 	  
@@ -102,21 +101,23 @@ public class TestConsumerPartitionRetention {
 	  	Message msgs = secondConsumer.next();
 	  	secondConsumedMessages.add(getMessage(msgs.getData().array()));
 	  }
+  	secondConsumer.close();
 	  LOG.info("number of messages consumed messages by second consumer " + 
 	  		secondConsumedMessages.size());
 	  
 		Assert.assertEquals(firstConsumedMessages.size() + 
 				secondConsumedMessages.size(), 1200);
-		
-  }	
+	}
+  
   @AfterTest
-  public void cleanup() {
- 	 consumer.close();
- 	 secondConsumer.close();
+  public void cleanup() throws Exception {
+  	FileSystem lfs = FileSystem.getLocal(conf);
+  	for (Path rootDir : rootDirs) {
+  		lfs.delete(rootDir.getParent(), true);
+  	}
   }
 
-
- 	private static String getMessage(byte[] array) throws IOException {
+  private static String getMessage(byte[] array) throws IOException {
  		return MessageUtil.getTextMessage(array).toString();
  	}
 }

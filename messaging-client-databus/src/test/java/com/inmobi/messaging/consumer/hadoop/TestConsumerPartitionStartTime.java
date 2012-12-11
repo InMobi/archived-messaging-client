@@ -9,6 +9,7 @@ import java.util.List;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 
 import org.testng.Assert;
@@ -48,9 +49,6 @@ public class TestConsumerPartitionStartTime {
   protected Path[] rootDirs;
   Path [][] finalPaths;
   Configuration conf;
-  Thread thread1;
-  Thread thread2;
-  
 	
   @BeforeTest
 	public void setup() throws Exception {
@@ -91,8 +89,7 @@ public class TestConsumerPartitionStartTime {
   
   @Test
 	public void testWithStartTime() throws Exception {
- 
-		consumer.init(streamName, consumerName, startTime, config);
+  	consumer.init(streamName, consumerName, startTime, config);
 		Assert.assertEquals(consumer.getTopicName(), streamName);
 		Assert.assertEquals(consumer.getConsumerName(), consumerName);
 	  
@@ -106,29 +103,29 @@ public class TestConsumerPartitionStartTime {
 		  Message msg = consumer.next();
 		  firstConsumedMessages.add(getMessage(msg.getData().array()));
 	  }
+		consumer.close();
     LOG.info("msgs consumed by first consumer" + firstConsumedMessages.size());
 	  
 	  while (secondConsumedMessages.size() < 600) {
 	  	Message msgs = secondConsumer.next();
 	  	secondConsumedMessages.add(getMessage(msgs.getData().array()));
 	  }
+	  secondConsumer.close();
 	  LOG.info("msgs consumed by second consumer " + secondConsumedMessages.size());
 		
 		Assert.assertEquals(firstConsumedMessages.size() + 
 				secondConsumedMessages.size(), 1200);
   }	
  
-  
-	
+  @AfterTest
+  public void cleanup() throws Exception {
+  	FileSystem lfs = FileSystem.getLocal(conf);
+    for (Path rootDir : rootDirs) {
+      lfs.delete(rootDir.getParent(), true);
+    }
+  }
 
- @AfterTest
- public void cleanup() {
-	 consumer.close();
-	 secondConsumer.close();
- }
-
-
-	private static String getMessage(byte[] array) throws IOException {
+  private static String getMessage(byte[] array) throws IOException {
 		return MessageUtil.getTextMessage(array).toString();
 	}
 }

@@ -81,7 +81,7 @@ public class PartitionReader {
     LOG.info("Partition reader initialized with partitionId:" + partitionId +
         " checkPoint:" + partitionCheckpoint +  
         " startTime:" + startTime +
-        " currentReader:" + reader + "noNewFiles" + noNewFiles);
+        " currentReader:" + reader);
   }
 
   PartitionReader(PartitionId partitionId,
@@ -102,7 +102,7 @@ public class PartitionReader {
     LOG.info("Partition reader initialized with partitionId:" + partitionId +
         " checkPoint:" + partitionCheckpointList +  
         " startTime:" + startTime +
-        " currentReader:" + reader + "noNewFiles" + noNewFiles);
+        " currentReader:" + reader);
   }
 
   private PartitionReader(PartitionId partitionId,
